@@ -125,3 +125,67 @@ AppointmentRepository
 Conflict checking
 
 Global exception handling
+
+
+Dependency Direction:
+
+Api
+ ├── Application
+ └── Infrastructure
+
+Application
+ └── Domain
+
+Infrastructure
+ ├── Application
+ └── Domain
+
+Tests
+ ├── Application
+ ├── Domain
+ └── Infrastructure
+ 
+ 
+
+Domain
+   ↑
+Application
+   ↑
+Infrastructure / Api
+
+
+BUSINESS RULES:
+
+StartTime must be earlier than EndTime
+
+A doctor cannot have overlapping active appointments
+
+
+
+EXAMPLE:
+
+CompanyManagement/
+├── CompanyManagement.Domain/          # Domain entities
+│   └── Entities/
+│       ├── Employee.cs
+│       └── Department.cs
+│
+├── CompanyManagement.Application/     # Business logic
+│   ├── Services/
+│   │   ├── IEmployeeService.cs
+│   │   └── EmployeeService.cs
+│   └── DTOs/
+│       ├── EmployeeDto.cs
+│       └── CreateEmployeeDto.cs
+│
+├── CompanyManagement.Infrastructure/  # Data access
+│   ├── Data/
+│   │   └── ApplicationDbContext.cs
+│   └── Repositories/
+│       ├── IEmployeeRepository.cs
+│       └── EmployeeRepository.cs
+│
+└── CompanyManagement.WebAPI/         # Presentation
+    ├── Controllers/
+    │   └── EmployeesController.cs
+    └── Program.cs

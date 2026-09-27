@@ -1,3 +1,7 @@
 <Solution>
-  <Project Path="medical-office-crm/medical-office-crm.csproj" />
+  <Project Path="MedicalOffice.Api/MedicalOffice.Api.csproj" />
+  <Project Path="MedicalOffice.Application/MedicalOffice.Application.csproj" />
+  <Project Path="MedicalOffice.Domain/MedicalOffice.Domain.csproj" />
+  <Project Path="MedicalOffice.Infrastructure/MedicalOffice.Infrastructure.csproj" />
+  <Project Path="MedicalOffice.Tests/MedicalOffice.Tests.csproj" />
 </Solution>
