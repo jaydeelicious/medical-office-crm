@@ -1,0 +1,127 @@
+Medical Office CRM API — manage patients, doctors, and appointments, with conflict prevention and basic scheduling rules.
+
+The initial domain can be:
+
+Patient
+- Id
+- FirstName
+- LastName
+- Phone
+- Email
+- DateOfBirth
+
+Doctor
+- Id
+- FirstName
+- LastName
+- Specialty
+
+Appointment
+- Id
+- PatientId
+- DoctorId
+- StartTime
+- EndTime
+- Status
+- Notes
+
+public enum AppointmentStatus
+{
+    Scheduled,
+    Completed,
+    Cancelled,
+    NoShow
+}
+
+The first useful endpoints: 
+
+POST   /api/patients
+GET    /api/patients/{id}
+GET    /api/patients?search=Papadopoulos
+PUT    /api/patients/{id}
+
+POST   /api/doctors
+GET    /api/doctors
+
+POST   /api/appointments
+GET    /api/appointments/{id}
+GET    /api/appointments?date=2026-09-27
+PUT    /api/appointments/{id}/reschedule
+PATCH  /api/appointments/{id}/status
+
+
+A doctor cannot have two active appointments
+whose time ranges overlap.
+
+Architecture: 
+
+MedicalOffice.sln
+
+src/
+├── MedicalOffice.Api
+├── MedicalOffice.Application
+├── MedicalOffice.Domain
+└── MedicalOffice.Infrastructure
+
+tests/
+└── MedicalOffice.Tests
+
+
+
+Responsibilities: 
+
+Domain
+    Entities
+    Enums
+    Domain rules
+
+Application
+    Services
+    DTOs
+    Interfaces
+
+Infrastructure
+    EF Core
+    DbContext
+    Repositories
+
+Api
+    Controllers
+    Middleware
+    DI configuration
+	
+Flow:
+
+HTTP request
+    ↓
+Controller
+    ↓
+Application service
+    ↓
+Repository
+    ↓
+EF Core DbContext
+    ↓
+Database
+
+
+
+First milestone:
+
+Patient
+Doctor
+Appointment
+
+MedicalOfficeDbContext
+
+EF Core configuration
+
+Create appointment endpoint
+
+AppointmentService
+
+AppointmentRepository
+
+Conflict checking
+
+Global exception handling

@@ -1,0 +1,6 @@
+@medical_office_crm_HostAddress = http://localhost:5092
+
+GET {{medical_office_crm_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
