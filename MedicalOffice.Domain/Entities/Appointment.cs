@@ -7,8 +7,10 @@ namespace MedicalOffice.Domain.Entities
         public Guid Id { get; set; }
 
         public Guid PatientId { get; set; }
+        public Patient Patient { get; set; } = null!;
 
         public Guid DoctorId { get; set; }
+        public Doctor Doctor { get; set; } = null!;
 
         public DateTime StartTime { get; set; }
 
