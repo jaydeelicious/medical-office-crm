@@ -5,6 +5,7 @@ using MedicalOffice.Application.Abstractions;
 using MedicalOffice.Infrastructure.Repositories;
 
 using MedicalOffice.Application.Patients;
+using MedicalOffice.Application.Doctors;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +18,9 @@ builder.Services.AddDbContext<MedicalOfficeDbContext>(options =>
 
 builder.Services.AddScoped<IPatientRepository, PatientRepository>();
 builder.Services.AddScoped<PatientService>();
+
+builder.Services.AddScoped<IDoctorRepository, DoctorRepository>();
+builder.Services.AddScoped<DoctorService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
