@@ -9,6 +9,8 @@ namespace MedicalOffice.Application.Abstractions
             CancellationToken cancellationToken = default);
 
         Task<IReadOnlyList<Appointment>> GetAllAsync(
+            Guid? doctorId = null,
+            DateOnly? date = null,
             CancellationToken cancellationToken = default);
 
         Task AddAsync(

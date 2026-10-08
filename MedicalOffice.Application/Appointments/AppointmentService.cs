@@ -32,10 +32,15 @@ namespace MedicalOffice.Application.Appointments
         }
 
         public async Task<IReadOnlyList<AppointmentDto>> GetAllAsync(
+            Guid? doctorId = null,
+            DateOnly? date = null,
             CancellationToken cancellationToken = default)
         {
             var appointments =
-                await _appointmentRepository.GetAllAsync(cancellationToken);
+                await _appointmentRepository.GetAllAsync(
+                    doctorId,
+                    date,
+                    cancellationToken);
 
             return appointments
                 .Select(MapToDto)

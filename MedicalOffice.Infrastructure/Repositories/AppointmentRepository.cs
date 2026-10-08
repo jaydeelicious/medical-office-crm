@@ -26,10 +26,31 @@ namespace MedicalOffice.Infrastructure.Repositories
         }
 
         public async Task<IReadOnlyList<Appointment>> GetAllAsync(
+            Guid? doctorId = null,
+            DateOnly? date = null,
             CancellationToken cancellationToken = default)
         {
-            return await _context.Appointments
-                .AsNoTracking()
+            IQueryable<Appointment> query = _context.Appointments
+                .AsNoTracking();
+
+            if (doctorId.HasValue)
+            {
+                query = query.Where(a => a.DoctorId == doctorId.Value);
+            }
+
+            if (date.HasValue)
+            {
+                var startOfDay = date.Value.ToDateTime(
+                    TimeOnly.MinValue);
+
+                var endOfDay = startOfDay.AddDays(1);
+
+                query = query.Where(a =>
+                    a.StartTime >= startOfDay &&
+                    a.StartTime < endOfDay);
+            }
+
+            return await query
                 .OrderBy(a => a.StartTime)
                 .ToListAsync(cancellationToken);
         }
