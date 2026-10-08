@@ -1,7 +1,7 @@
 ﻿using MedicalOffice.Application.Abstractions;
 using MedicalOffice.Domain.Entities;
 using MedicalOffice.Domain.Enums;
-using System.Runtime.CompilerServices;
+using MedicalOffice.Application.Exceptions;
 
 namespace MedicalOffice.Application.Appointments
 {
@@ -52,7 +52,7 @@ namespace MedicalOffice.Application.Appointments
         {
             if (request.StartTime >= request.EndTime)
             {
-                throw new ArgumentException(
+                throw new ValidationException(
                     "Start time must be earlier than end time.");
             }
 
@@ -63,7 +63,7 @@ namespace MedicalOffice.Application.Appointments
 
             if (patient is null)
             {
-                throw new ArgumentException("Patient does not exist.");
+                throw new NotFoundException("Patient does not exist.");
             }
 
             var doctor =
@@ -73,7 +73,7 @@ namespace MedicalOffice.Application.Appointments
 
             if (doctor is null)
             {
-                throw new ArgumentException("Doctor does not exist.");
+                throw new NotFoundException("Doctor does not exist.");
             }
 
             var hasOverlap =
@@ -85,7 +85,7 @@ namespace MedicalOffice.Application.Appointments
 
             if (hasOverlap)
             {
-                throw new InvalidOperationException(
+                throw new ConflictException(
                     "The doctor already has an appointment during this time.");
             }
 
