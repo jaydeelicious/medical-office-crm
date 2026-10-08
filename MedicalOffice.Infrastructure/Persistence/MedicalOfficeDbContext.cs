@@ -1,9 +1,11 @@
 ﻿using MedicalOffice.Domain.Entities;
+using MedicalOffice.Infrastructure.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace MedicalOffice.Infrastructure.Persistence
 {
-    public class MedicalOfficeDbContext : DbContext
+    public class MedicalOfficeDbContext : IdentityDbContext<ApplicationUser>
     {
         public MedicalOfficeDbContext(
             DbContextOptions<MedicalOfficeDbContext> options)
@@ -19,10 +21,10 @@ namespace MedicalOffice.Infrastructure.Persistence
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            base.OnModelCreating(modelBuilder);
+
             modelBuilder.ApplyConfigurationsFromAssembly(
                 typeof(MedicalOfficeDbContext).Assembly);
-
-            base.OnModelCreating(modelBuilder);
         }
     }
 }

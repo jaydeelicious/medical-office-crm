@@ -12,6 +12,9 @@ using MedicalOffice.Api.ExceptionHandling;
 
 using FluentValidation;
 
+using MedicalOffice.Infrastructure.Identity;
+using Microsoft.AspNetCore.Identity;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -40,6 +43,27 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
+
+// Required by Identity's data protection token providers
+builder.Services.AddDataProtection();
+
+builder.Services
+    .AddIdentityCore<ApplicationUser>(options =>
+    {
+        options.Password.RequiredLength = 12;
+        options.Password.RequireDigit = true;
+        options.Password.RequireUppercase = true;
+        options.Password.RequireLowercase = true;
+        options.Password.RequireNonAlphanumeric = true;
+
+        options.Lockout.DefaultLockoutTimeSpan =
+            TimeSpan.FromMinutes(15);
+
+        options.Lockout.MaxFailedAccessAttempts = 5;
+    })
+    .AddRoles<IdentityRole>()
+    .AddEntityFrameworkStores<MedicalOfficeDbContext>()
+    .AddDefaultTokenProviders();
 
 var app = builder.Build();
 
