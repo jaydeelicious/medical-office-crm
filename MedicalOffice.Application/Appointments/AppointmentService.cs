@@ -147,7 +147,7 @@ namespace MedicalOffice.Application.Appointments
 
             if (hasOverlap)
             {
-                throw new InvalidOperationException(
+                throw new ConflictException(
                     "The doctor already has an appointment during this time.");
             }
 
