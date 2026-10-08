@@ -2,6 +2,7 @@
 using MedicalOffice.Domain.Entities;
 using MedicalOffice.Domain.Enums;
 using MedicalOffice.Application.Exceptions;
+using FluentValidation;
 
 namespace MedicalOffice.Application.Appointments
 {
@@ -10,15 +11,24 @@ namespace MedicalOffice.Application.Appointments
         private readonly IAppointmentRepository _appointmentRepository;
         private readonly IDoctorRepository _doctorRepository;
         private readonly IPatientRepository _patientRepository;
+        private readonly IValidator<CreateAppointmentRequest> _createValidator;
+        private readonly IValidator<RescheduleAppointmentRequest> _rescheduleValidator;
+        private readonly IValidator<UpdateAppointmentStatusRequest> _statusValidator;
 
         public AppointmentService(
             IAppointmentRepository appointmentRepository,
             IDoctorRepository doctorRepository,
-            IPatientRepository patientRepository)
+            IPatientRepository patientRepository,
+            IValidator<CreateAppointmentRequest> createValidator,
+            IValidator<RescheduleAppointmentRequest> rescheduleValidator,
+            IValidator<UpdateAppointmentStatusRequest> statusValidator)
         {
             _appointmentRepository = appointmentRepository;
             _doctorRepository = doctorRepository;
             _patientRepository = patientRepository;
+            _createValidator = createValidator;
+            _rescheduleValidator = rescheduleValidator;
+            _statusValidator = statusValidator;
         }
 
         public async Task<IReadOnlyList<AppointmentDto>> GetAllAsync(
@@ -50,11 +60,9 @@ namespace MedicalOffice.Application.Appointments
             CreateAppointmentRequest request,
             CancellationToken cancellationToken = default)
         {
-            if (request.StartTime >= request.EndTime)
-            {
-                throw new ValidationException(
-                    "Start time must be earlier than end time.");
-            }
+            await _createValidator.ValidateAndThrowAsync(
+                request,
+                cancellationToken);
 
             var patient =
                 await _patientRepository.GetByIdAsync(
@@ -115,11 +123,9 @@ namespace MedicalOffice.Application.Appointments
             RescheduleAppointmentRequest request,
             CancellationToken cancellationToken = default)
         {
-            if (request.StartTime >= request.EndTime)
-            {
-                throw new ArgumentException(
-                    "Start time must be earlier than end time.");
-            }
+            await _rescheduleValidator.ValidateAndThrowAsync(
+                request,
+                cancellationToken);
 
             var appointment =
                 await _appointmentRepository.GetByIdAsync(
@@ -159,6 +165,10 @@ namespace MedicalOffice.Application.Appointments
             UpdateAppointmentStatusRequest request,
             CancellationToken cancellationToken = default)
         {
+            await _statusValidator.ValidateAndThrowAsync(
+                request,
+                cancellationToken);
+
             var appointment =
                 await _appointmentRepository.GetByIdAsync(
                     id,

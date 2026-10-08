@@ -24,8 +24,4 @@
     <ProjectReference Include="..\MedicalOffice.Infrastructure\MedicalOffice.Infrastructure.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="ExceptionHandling\" />
-  </ItemGroup>
-
 </Project>

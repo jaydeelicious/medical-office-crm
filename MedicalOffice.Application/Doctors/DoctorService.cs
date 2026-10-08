@@ -1,4 +1,6 @@
-﻿using MedicalOffice.Application.Abstractions;
+﻿using FluentValidation;
+using MedicalOffice.Application.Abstractions;
+using MedicalOffice.Application.Patients;
 using MedicalOffice.Domain.Entities;
 
 namespace MedicalOffice.Application.Doctors
@@ -6,10 +8,17 @@ namespace MedicalOffice.Application.Doctors
     public class DoctorService
     {
         private readonly IDoctorRepository _doctorRepository;
+        private readonly IValidator<CreateDoctorRequest> _createValidator;
+        private readonly IValidator<UpdateDoctorRequest> _updateValidator;
 
-        public DoctorService(IDoctorRepository doctorRepository)
+        public DoctorService(
+            IDoctorRepository doctorRepository,
+            IValidator<CreateDoctorRequest> createValidator,
+            IValidator<UpdateDoctorRequest> updateValidator)
         {
             _doctorRepository = doctorRepository;
+            _createValidator = createValidator;
+            _updateValidator = updateValidator;
         }
 
         public async Task<IReadOnlyList<DoctorDto>> GetAllAsync(
@@ -39,6 +48,10 @@ namespace MedicalOffice.Application.Doctors
             CreateDoctorRequest request,
             CancellationToken cancellationToken = default)
         {
+            await _createValidator.ValidateAndThrowAsync(
+                request,
+                cancellationToken);
+
             var doctor = new Doctor
             {
                 Id = Guid.NewGuid(),
@@ -63,6 +76,10 @@ namespace MedicalOffice.Application.Doctors
             UpdateDoctorRequest request,
             CancellationToken cancellationToken = default)
         {
+            await _updateValidator.ValidateAndThrowAsync(
+                request,
+                cancellationToken);
+
             var doctor = await _doctorRepository.GetByIdAsync(
                 id,
                 cancellationToken);

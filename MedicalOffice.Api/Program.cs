@@ -10,6 +10,8 @@ using MedicalOffice.Application.Appointments;
 
 using MedicalOffice.Api.ExceptionHandling;
 
+using FluentValidation;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -27,6 +29,8 @@ builder.Services.AddScoped<DoctorService>();
 
 builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
 builder.Services.AddScoped<AppointmentService>();
+
+builder.Services.AddValidatorsFromAssemblyContaining<CreatePatientRequestValidator>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

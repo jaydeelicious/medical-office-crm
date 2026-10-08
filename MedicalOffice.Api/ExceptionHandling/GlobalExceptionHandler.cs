@@ -1,6 +1,7 @@
 ﻿using MedicalOffice.Application.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using FluentValidation;
 
 namespace MedicalOffice.Api.ExceptionHandling
 {
@@ -19,9 +20,34 @@ namespace MedicalOffice.Api.ExceptionHandling
             Exception exception,
             CancellationToken cancellationToken)
         {
+            if (exception is ValidationException validationException)
+            {
+                var errors = validationException.Errors
+                    .GroupBy(error => error.PropertyName)
+                    .ToDictionary(
+                        group => group.Key,
+                        group => group
+                            .Select(error => error.ErrorMessage)
+                            .ToArray());
+
+                var validationProblem = new ValidationProblemDetails(errors)
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    Title = "Validation failed"
+                };
+
+                httpContext.Response.StatusCode =
+                    StatusCodes.Status400BadRequest;
+
+                await httpContext.Response.WriteAsJsonAsync(
+                    validationProblem,
+                    cancellationToken);
+
+                return true;
+            }
+
             var statusCode = exception switch
             {
-                ValidationException => StatusCodes.Status400BadRequest,
                 NotFoundException => StatusCodes.Status404NotFound,
                 ConflictException => StatusCodes.Status409Conflict,
                 _ => StatusCodes.Status500InternalServerError
