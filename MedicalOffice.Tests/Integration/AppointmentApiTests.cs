@@ -263,5 +263,199 @@ namespace MedicalOffice.Tests.Integration
 
             count.Should().Be(1);
         }
+
+
+        [Fact]
+        public async Task GetAll_WhenDoctorIdProvided_ReturnsOnlyDoctorsAppointments()
+        {
+            // Arrange
+            using var factory = new CustomWebApplicationFactory();
+            using var client = factory.CreateClient();
+
+            var (doctor1Id, _, appointmentIds) =
+                await SeedAppointmentsAsync(factory);
+
+            // Act
+            var response = await client.GetAsync(
+                $"/api/appointments?doctorId={doctor1Id}");
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+            var result = await response.Content
+                .ReadFromJsonAsync<List<AppointmentDto>>();
+
+            result.Should().NotBeNull();
+            result.Should().HaveCount(3);
+
+            result!.Should().OnlyContain(
+                a => a.DoctorId == doctor1Id);
+
+            result.Select(a => a.Id)
+                .Should().BeEquivalentTo(appointmentIds.Take(3));
+        }
+
+
+        [Fact]
+        public async Task GetAll_WhenDateProvided_ReturnsOnlyAppointmentsOnThatDate()
+        {
+            // Arrange
+            using var factory = new CustomWebApplicationFactory();
+            using var client = factory.CreateClient();
+
+            var (_, _, appointmentIds) =
+                await SeedAppointmentsAsync(factory);
+
+            // Act
+            var response = await client.GetAsync(
+                "/api/appointments?date=2026-10-15");
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+            var result = await response.Content
+                .ReadFromJsonAsync<List<AppointmentDto>>();
+
+            result.Should().NotBeNull();
+            result.Should().HaveCount(3);
+
+            result!.Should().OnlyContain(
+                a => DateOnly.FromDateTime(a.StartTime)
+                     == new DateOnly(2026, 10, 15));
+
+            result.Select(a => a.Id)
+                .Should().BeEquivalentTo(new[]
+                {
+            appointmentIds[0],
+            appointmentIds[1],
+            appointmentIds[3]
+                });
+        }
+
+
+        [Fact]
+        public async Task GetAll_WhenDoctorAndDateProvided_AppliesBothFilters()
+        {
+            // Arrange
+            using var factory = new CustomWebApplicationFactory();
+            using var client = factory.CreateClient();
+
+            var (doctor1Id, _, appointmentIds) =
+                await SeedAppointmentsAsync(factory);
+
+            // Act
+            var response = await client.GetAsync(
+                $"/api/appointments?doctorId={doctor1Id}&date=2026-10-15");
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+            var result = await response.Content
+                .ReadFromJsonAsync<List<AppointmentDto>>();
+
+            result.Should().NotBeNull();
+            result.Should().HaveCount(2);
+
+            result!.Should().OnlyContain(
+                a => a.DoctorId == doctor1Id &&
+                     DateOnly.FromDateTime(a.StartTime)
+                     == new DateOnly(2026, 10, 15));
+
+            result.Select(a => a.Id)
+                .Should().BeEquivalentTo(new[]
+                {
+            appointmentIds[0],
+            appointmentIds[1]
+                });
+        }
+
+
+        private static async Task<(Guid Doctor1Id, Guid Doctor2Id, Guid[] AppointmentIds)>
+            SeedAppointmentsAsync(CustomWebApplicationFactory factory)
+        {
+            using var scope = factory.Services.CreateScope();
+
+            var context = scope.ServiceProvider
+                .GetRequiredService<MedicalOfficeDbContext>();
+
+            await context.Database.EnsureCreatedAsync();
+
+            var patientId = Guid.NewGuid();
+            var doctor1Id = Guid.NewGuid();
+            var doctor2Id = Guid.NewGuid();
+
+            context.Patients.Add(new Patient
+            {
+                Id = patientId,
+                FirstName = "Κώστας",
+                LastName = "Παπαδόπουλος"
+            });
+
+            context.Doctors.AddRange(
+                new Doctor
+                {
+                    Id = doctor1Id,
+                    FirstName = "Μαρία",
+                    LastName = "Σμίθου",
+                    Specialty = "Καρδιολόγος"
+                },
+                new Doctor
+                {
+                    Id = doctor2Id,
+                    FirstName = "Αλέξανδρος",
+                    LastName = "Καφές",
+                    Specialty = "Νευρολόγος"
+                });
+
+            var appointments = new[]
+            {
+                new Appointment
+                {
+                    Id = Guid.NewGuid(),
+                    PatientId = patientId,
+                    DoctorId = doctor1Id,
+                    StartTime = new DateTime(2026, 10, 15, 10, 0, 0),
+                    EndTime = new DateTime(2026, 10, 15, 11, 0, 0),
+                    Status = AppointmentStatus.Scheduled
+                },
+                new Appointment
+                {
+                    Id = Guid.NewGuid(),
+                    PatientId = patientId,
+                    DoctorId = doctor1Id,
+                    StartTime = new DateTime(2026, 10, 15, 12, 0, 0),
+                    EndTime = new DateTime(2026, 10, 15, 13, 0, 0),
+                    Status = AppointmentStatus.Scheduled
+                },
+                new Appointment
+                {
+                    Id = Guid.NewGuid(),
+                    PatientId = patientId,
+                    DoctorId = doctor1Id,
+                    StartTime = new DateTime(2026, 10, 16, 10, 0, 0),
+                    EndTime = new DateTime(2026, 10, 16, 11, 0, 0),
+                    Status = AppointmentStatus.Scheduled
+                },
+                new Appointment
+                {
+                    Id = Guid.NewGuid(),
+                    PatientId = patientId,
+                    DoctorId = doctor2Id,
+                    StartTime = new DateTime(2026, 10, 15, 10, 0, 0),
+                    EndTime = new DateTime(2026, 10, 15, 11, 0, 0),
+                    Status = AppointmentStatus.Scheduled
+                }
+            };
+
+            context.Appointments.AddRange(appointments);
+
+            await context.SaveChangesAsync();
+
+            return (
+                doctor1Id,
+                doctor2Id,
+                appointments.Select(a => a.Id).ToArray()
+            );
+        }
     }
 }
