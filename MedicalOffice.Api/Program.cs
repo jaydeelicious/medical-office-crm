@@ -15,6 +15,10 @@ using FluentValidation;
 using MedicalOffice.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 
+using MedicalOffice.Api.Extensions;
+
+using OpenIddict.Validation.AspNetCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -35,6 +39,10 @@ builder.Services.AddOpenIddict()
         options.UseEntityFrameworkCore()
             .UseDbContext<MedicalOfficeDbContext>();
     });
+
+builder.Services.AddOpenIddictServer(
+    builder.Environment,
+    builder.Configuration);
     
 
 builder.Services.AddScoped<IPatientRepository, PatientRepository>();
@@ -78,6 +86,17 @@ builder.Services
     .AddEntityFrameworkStores<MedicalOfficeDbContext>()
     .AddDefaultTokenProviders();
 
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("ApiBearer", policy =>
+    {
+        policy.AddAuthenticationSchemes(
+            OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
+
+        policy.RequireAuthenticatedUser();
+    });
+});
+
 var app = builder.Build();
 
 app.UseExceptionHandler();
@@ -92,6 +111,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

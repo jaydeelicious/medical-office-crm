@@ -1,10 +1,12 @@
 ﻿using MedicalOffice.Application.Doctors;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace MedicalOffice.Api.Controllers
 {
     [ApiController]
     [Route("api/doctors")]
+    [Authorize(Policy = "ApiBearer")]
     public class DoctorsController : ControllerBase
     {
         private readonly DoctorService _doctorService;

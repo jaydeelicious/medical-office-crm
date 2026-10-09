@@ -7,6 +7,9 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using MedicalOffice.Infrastructure.Persistence;
+using MedicalOffice.Tests.Integration.Authentication;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 
 namespace MedicalOffice.Tests.Integration
 {
@@ -37,6 +40,21 @@ namespace MedicalOffice.Tests.Integration
 
                     options.UseSqlite(connection);
                     options.UseOpenIddict();
+                });
+
+                services
+                    .AddAuthentication()
+                    .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
+                        TestAuthHandler.SchemeName,
+                        options => { });
+
+                // Replace the production API policy only in the test host.
+                services.PostConfigure<AuthorizationOptions>(options =>
+                {
+                    options.AddPolicy("ApiBearer", new AuthorizationPolicyBuilder(
+                        TestAuthHandler.SchemeName)
+                        .RequireAuthenticatedUser()
+                        .Build());
                 });
             });
         }
