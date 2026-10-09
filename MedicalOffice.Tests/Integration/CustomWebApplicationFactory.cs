@@ -34,7 +34,9 @@ namespace MedicalOffice.Tests.Integration
                 services.AddDbContext<MedicalOfficeDbContext>((serviceProvider, options) =>
                 {
                     var connection = serviceProvider.GetRequiredService<DbConnection>();
+
                     options.UseSqlite(connection);
+                    options.UseOpenIddict();
                 });
             });
         }
