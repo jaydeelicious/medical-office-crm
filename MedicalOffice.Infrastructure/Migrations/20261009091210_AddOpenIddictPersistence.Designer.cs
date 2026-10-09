@@ -4,6 +4,7 @@ using MedicalOffice.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace MedicalOffice.Infrastructure.Migrations
 {
     [DbContext(typeof(MedicalOfficeDbContext))]
-    partial class MedicalOfficeDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261009091210_AddOpenIddictPersistence")]
+    partial class AddOpenIddictPersistence
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
