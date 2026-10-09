@@ -8,7 +8,7 @@ namespace MedicalOffice.Tests.Integration.Authentication
 {
     public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
     {
-        public const string Scheme = "TestScheme";
+        public const string SchemeName = "TestScheme";
 
         public TestAuthHandler(
             IOptionsMonitor<AuthenticationSchemeOptions> options,
@@ -26,10 +26,10 @@ namespace MedicalOffice.Tests.Integration.Authentication
                 new Claim(ClaimTypes.Name, "Test User")
             };
 
-            var identity = new ClaimsIdentity(claims, Scheme);
+            var identity = new ClaimsIdentity(claims, SchemeName);
             var principal = new ClaimsPrincipal(identity);
 
-            var ticket = new AuthenticationTicket(principal, Scheme);
+            var ticket = new AuthenticationTicket(principal, SchemeName);
 
             return Task.FromResult(
                 AuthenticateResult.Success(ticket));

@@ -45,14 +45,14 @@ namespace MedicalOffice.Tests.Integration
                 services
                     .AddAuthentication()
                     .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
-                        TestAuthHandler.Scheme,
+                        TestAuthHandler.SchemeName,
                         options => { });
 
                 // Replace the production API policy only in the test host.
                 services.PostConfigure<AuthorizationOptions>(options =>
                 {
                     options.AddPolicy("ApiBearer", new AuthorizationPolicyBuilder(
-                        TestAuthHandler.Scheme)
+                        TestAuthHandler.SchemeName)
                         .RequireAuthenticatedUser()
                         .Build());
                 });
