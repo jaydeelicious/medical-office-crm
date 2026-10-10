@@ -1,0 +1,56 @@
+﻿@model MedicalOffice.Api.Models.Account.LoginViewModel
+
+@{
+	ViewData["Title"] = "Sign in";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport"
+		content="width=device-width, initial-scale=1" />
+	<title>Medical Office CRM - Sign in</title>
+</head>
+<body>
+	<main>
+		<h1>Medical Office CRM</h1>
+
+		@if (User.Identity?.IsAuthenticated == true)
+		{
+			<p>You are signed in.</p>
+
+			<form method="post" action="/account/logout">
+				@Html.AntiForgeryToken()
+				<button type="submit">Sign out</button>
+			</form>
+		}
+		else
+		{
+			<form method="post" action="/account/login"	>
+				@Html.AntiForgeryToken()
+
+				<input type="hidden"
+					asp-for="ReturnUrl" />
+
+				<div asp-validation-summary="All"></div>
+
+				<div>
+					<label asp-for="UserName">Username</label>
+					<input asp-for="UserName"
+						autocomplete="username" />
+				</div>
+
+				<div>
+					<label asp-for="Password">Password</label>
+					<input asp-for="Password"
+						type="password"
+						autocomplete="current-password" />
+				</div>
+
+				<button type="submit">Sign in</button>
+			</form>
+		}
+	</main>
+</body>
+</html>
