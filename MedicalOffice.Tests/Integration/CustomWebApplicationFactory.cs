@@ -10,6 +10,7 @@ using MedicalOffice.Infrastructure.Persistence;
 using MedicalOffice.Tests.Integration.Authentication;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Configuration;
 
 namespace MedicalOffice.Tests.Integration
 {
@@ -18,6 +19,15 @@ namespace MedicalOffice.Tests.Integration
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.UseEnvironment("Development");
+
+            builder.ConfigureAppConfiguration((context, config) =>
+            {
+                config.AddInMemoryCollection(
+                    new Dictionary<string, string?>
+                    {
+                        ["OpenIddict:Clients:SeedOnStartup"] = "false"
+                    });
+            });
 
             builder.ConfigureServices(services =>
             {

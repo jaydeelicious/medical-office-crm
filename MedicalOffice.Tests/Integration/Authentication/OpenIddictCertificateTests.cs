@@ -20,6 +20,15 @@ namespace MedicalOffice.Tests.Integration.Authentication
                         config.AddInMemoryCollection(
                             new Dictionary<string, string?>
                             {
+                                ["OpenIddict:Clients:SeedOnStartup"] = "false"
+                            });
+                    });
+
+                    builder.ConfigureAppConfiguration((context, config) =>
+                    {
+                        config.AddInMemoryCollection(
+                            new Dictionary<string, string?>
+                            {
                                 ["OpenIddict:Certificates:Signing:Path"] = "",
                                 ["OpenIddict:Certificates:Signing:Password"] = "",
                                 ["OpenIddict:Certificates:Encryption:Path"] = "",
