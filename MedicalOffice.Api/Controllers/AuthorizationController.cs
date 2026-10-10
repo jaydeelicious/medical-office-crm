@@ -1,9 +1,12 @@
 ﻿using System.Security.Claims;
+using System.Globalization;
 using MedicalOffice.Infrastructure.Identity;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Tokens;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
@@ -35,33 +38,105 @@ namespace MedicalOffice.Api.Controllers
 
             // Authenticate using the Identity browser cookie.
             var result = await HttpContext.AuthenticateAsync(
-                IdentityConstants.ApplicationScheme);
+    IdentityConstants.ApplicationScheme);
 
-            if (!result.Succeeded || result.Principal is null)
+            var authenticated =
+                result.Succeeded && result.Principal is not null;
+
+            var issuedUtc = result.Properties?.IssuedUtc;
+
+            var requiresFreshLogin =
+                request.HasPromptValue(PromptValues.Login) ||
+                request.MaxAge is 0;
+
+            var sessionTooOld =
+                authenticated &&
+                request.MaxAge is > 0 &&
+                (issuedUtc is null ||
+                 DateTimeOffset.UtcNow - issuedUtc.Value >
+                 TimeSpan.FromSeconds(request.MaxAge.Value));
+
+            if (!authenticated || requiresFreshLogin || sessionTooOld)
             {
-                // Silent authorization must not trigger interactive login.
+                // Never display a login page for prompt=none.
                 if (request.HasPromptValue(PromptValues.None))
                 {
                     return Forbid(
-                        new AuthenticationProperties(new Dictionary<string, string?>
-                        {
-                            [OpenIddictServerAspNetCoreConstants.Properties.Error] =
-                                Errors.LoginRequired,
+                        new AuthenticationProperties(
+                            new Dictionary<string, string?>
+                            {
+                                [OpenIddictServerAspNetCoreConstants
+                                    .Properties.Error] = Errors.LoginRequired,
 
-                            [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
-                                "The user is not logged in."
-                        }),
+                                [OpenIddictServerAspNetCoreConstants
+                                    .Properties.ErrorDescription] =
+                                    "Fresh user authentication is required."
+                            }),
                         OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
                 }
 
-                // Preserve the authorization request across login.
+                // Prevent an existing browser session from satisfying
+                // a request that explicitly requires reauthentication.
+                if (authenticated &&
+                    (requiresFreshLogin || sessionTooOld))
+                {
+                    await HttpContext.SignOutAsync(
+                        IdentityConstants.ApplicationScheme);
+                }
+
                 var returnUrl =
                     Request.PathBase + Request.Path + Request.QueryString;
+
+                // Remove one-time reauthentication requirements after
+                // redirecting to the login page, preventing a redirect loop.
+                if (requiresFreshLogin)
+                {
+                    var parameters = Request.Query
+                        .Where(parameter =>
+                            parameter.Key != Parameters.Prompt &&
+                            parameter.Key != Parameters.MaxAge)
+                        .Select(parameter =>
+                            new KeyValuePair<string, StringValues>(
+                                parameter.Key,
+                                parameter.Value))
+                        .ToList();
+
+                    var remainingPrompts = request.GetPromptValues()
+                        .Where(prompt => prompt != PromptValues.Login)
+                        .ToArray();
+
+                    if (remainingPrompts.Length > 0)
+                    {
+                        parameters.Add(
+                            new KeyValuePair<string, StringValues>(
+                                Parameters.Prompt,
+                                string.Join(" ", remainingPrompts)));
+                    }
+
+                    // Preserve a positive max_age constraint.
+                    if (request.MaxAge is > 0)
+                    {
+                        parameters.Add(
+                            new KeyValuePair<string, StringValues>(
+                                Parameters.MaxAge,
+                                request.MaxAge.Value.ToString(
+                                    CultureInfo.InvariantCulture)));
+                    }
+
+                    returnUrl = Request.PathBase + Request.Path +
+                        QueryString.Create(parameters);
+                }
 
                 return RedirectToAction(
                     "Login",
                     "Account",
                     new { returnUrl = returnUrl.ToString() });
+            }
+
+            if (result.Principal is null)
+            {
+                throw new InvalidOperationException(
+                    "The authenticated user principal is missing.");
             }
 
             // Retrieve the current user from Identity.
@@ -91,6 +166,15 @@ namespace MedicalOffice.Api.Controllers
                 nameType: Claims.Name,
                 roleType: Claims.Role);
 
+            if (issuedUtc is not null)
+            {
+                identity.AddClaim(new Claim(
+                    Claims.AuthenticationTime,
+                    issuedUtc.Value.ToUnixTimeSeconds()
+                        .ToString(CultureInfo.InvariantCulture),
+                    ClaimValueTypes.Integer64));
+            }
+
             identity.SetClaim(
                 Claims.Subject,
                 await _userManager.GetUserIdAsync(user));
@@ -109,6 +193,9 @@ namespace MedicalOffice.Api.Controllers
             // Explicitly select the tokens that may expose each claim.
             identity.SetDestinations(claim => claim.Type switch
             {
+                Claims.AuthenticationTime
+                    => [Destinations.IdentityToken],
+
                 Claims.Name when identity.HasScope(Scopes.Profile)
                     => [Destinations.AccessToken,
                         Destinations.IdentityToken],

@@ -112,7 +112,7 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/account/access-denied";
 
     options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
-    options.SlidingExpiration = true;
+    options.SlidingExpiration = false;
 });
 
 builder.Services.AddAuthorization(options =>

@@ -266,6 +266,114 @@ public class AuthorizationEndpointTests
         Assert.NotEqual(HttpStatusCode.OK, response.StatusCode);
     }
 
+    [Fact]
+    public async Task Authorize_WithPromptLogin_RequiresReauthentication()
+    {
+        using var factory = new CustomWebApplicationFactory();
+        using var client = CreateClient(factory);
+
+        await RegisterTestClientAsync(factory);
+        await CreateTestUserAsync(factory);
+        await LoginAsync(client);
+
+        using var response = await client.GetAsync(
+            BuildAuthorizationUrl(prompt: "login"));
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+
+        var redirect = new Uri(
+            client.BaseAddress!,
+            response.Headers.Location!);
+
+        Assert.Equal("/account/login", redirect.AbsolutePath);
+
+        var query = QueryHelpers.ParseQuery(redirect.Query);
+        var returnUrl = query["returnUrl"].ToString();
+
+        Assert.Contains("/connect/authorize", returnUrl);
+        Assert.DoesNotContain("prompt=login", returnUrl);
+    }
+
+    [Fact]
+    public async Task Authorize_WithMaxAgeZero_RequiresReauthentication()
+    {
+        using var factory = new CustomWebApplicationFactory();
+        using var client = CreateClient(factory);
+
+        await RegisterTestClientAsync(factory);
+        await CreateTestUserAsync(factory);
+        await LoginAsync(client);
+
+        using var response = await client.GetAsync(
+            BuildAuthorizationUrl(maxAge: 0));
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+
+        var redirect = new Uri(
+            client.BaseAddress!,
+            response.Headers.Location!);
+
+        Assert.Equal("/account/login", redirect.AbsolutePath);
+    }
+
+    [Fact]
+    public async Task Authorize_WithRecentSessionAndMaxAge_IssuesCode()
+    {
+        using var factory = new CustomWebApplicationFactory();
+        using var client = CreateClient(factory);
+
+        await RegisterTestClientAsync(factory);
+        await CreateTestUserAsync(factory);
+        await LoginAsync(client);
+
+        using var response = await client.GetAsync(
+            BuildAuthorizationUrl(maxAge: 300));
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+
+        var callback = new Uri(
+            client.BaseAddress!,
+            response.Headers.Location!);
+
+        Assert.Equal("client.example", callback.Host);
+
+        var parameters = QueryHelpers.ParseQuery(callback.Query);
+
+        Assert.True(parameters.ContainsKey("code"));
+    }
+
+    [Fact]
+    public async Task Authorize_PromptNoneAndMaxAgeZero_DoesNotShowLogin()
+    {
+        using var factory = new CustomWebApplicationFactory();
+        using var client = CreateClient(factory);
+
+        await RegisterTestClientAsync(factory);
+        await CreateTestUserAsync(factory);
+        await LoginAsync(client);
+
+        using var response = await client.GetAsync(
+            BuildAuthorizationUrl(
+                prompt: "none",
+                maxAge: 0));
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+
+        var callback = new Uri(
+            client.BaseAddress!,
+            response.Headers.Location!);
+
+        Assert.Equal("client.example", callback.Host);
+
+        var parameters = QueryHelpers.ParseQuery(callback.Query);
+
+        Assert.Equal(
+            Errors.LoginRequired,
+            parameters["error"].ToString());
+
+        Assert.False(parameters.ContainsKey("code"));
+    }
+
     private static HttpClient CreateClient(
         CustomWebApplicationFactory factory)
     {
@@ -350,7 +458,8 @@ public class AuthorizationEndpointTests
 
     private static string BuildAuthorizationUrl(
         string? prompt = null,
-        string clientId = ClientId)
+        string clientId = ClientId,
+        int? maxAge = null)
     {
         var parameters = new Dictionary<string, string>
         {
@@ -367,6 +476,9 @@ public class AuthorizationEndpointTests
         {
             parameters["prompt"] = prompt;
         }
+
+        if (maxAge.HasValue)
+            parameters["max_age"] = maxAge.Value.ToString();
 
         var query = string.Join("&", parameters.Select(
             parameter =>
