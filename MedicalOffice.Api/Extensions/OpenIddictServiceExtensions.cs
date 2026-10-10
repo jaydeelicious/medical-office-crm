@@ -65,7 +65,8 @@ namespace MedicalOffice.Api.Extensions
 
                     // ASP.NET Core integration
                     options.UseAspNetCore()
-                        .EnableAuthorizationEndpointPassthrough();
+                        .EnableAuthorizationEndpointPassthrough()
+                        .EnableTokenEndpointPassthrough();
                 })
                 .AddValidation(options =>
                 {
