@@ -291,7 +291,7 @@ public class AuthorizationEndpointTests
         var returnUrl = query["returnUrl"].ToString();
 
         Assert.Contains("/connect/authorize", returnUrl);
-        Assert.DoesNotContain("prompt=login", returnUrl);
+        Assert.Contains("prompt=login", returnUrl);
     }
 
     [Fact]
@@ -372,6 +372,94 @@ public class AuthorizationEndpointTests
             parameters["error"].ToString());
 
         Assert.False(parameters.ContainsKey("code"));
+    }
+
+    [Fact]
+    public async Task Authorize_WithPromptLogin_RequiresSuccessfulReauthentication()
+    {
+        using var factory = new CustomWebApplicationFactory();
+        using var client = CreateClient(factory);
+
+        await RegisterTestClientAsync(factory);
+        await CreateTestUserAsync(factory);
+
+        // 1. Sign in normally.
+        await LoginAsync(client);
+
+        var authorizationUrl = BuildAuthorizationUrl(
+            prompt: "login");
+
+        // 2. Request fresh authentication.
+        using var firstResponse = await client.GetAsync(
+            authorizationUrl);
+
+        Assert.Equal(
+            HttpStatusCode.Redirect,
+            firstResponse.StatusCode);
+
+        var loginRedirect = new Uri(
+            client.BaseAddress!,
+            firstResponse.Headers.Location!);
+
+        Assert.Equal(
+            "/account/login",
+            loginRedirect.AbsolutePath);
+
+        // Verify that the original authorization request is preserved.
+        var loginQuery = QueryHelpers.ParseQuery(
+            loginRedirect.Query);
+
+        var returnUrl = loginQuery["returnUrl"].ToString();
+
+        Assert.Contains("prompt=login", returnUrl);
+
+        // 3. Request authorization again without logging in.
+        using var secondResponse = await client.GetAsync(
+            authorizationUrl);
+
+        Assert.Equal(
+            HttpStatusCode.Redirect,
+            secondResponse.StatusCode);
+
+        var secondRedirect = new Uri(
+            client.BaseAddress!,
+            secondResponse.Headers.Location!);
+
+        // Must still require authentication, not issue a code.
+        Assert.Equal(
+            "/account/login",
+            secondRedirect.AbsolutePath);
+
+        // 4. Enter valid credentials again.
+        await LoginAsync(client);
+
+        // 5. Resume the original, unchanged authorization request.
+        using var finalResponse = await client.GetAsync(
+            returnUrl);
+
+        Assert.Equal(
+            HttpStatusCode.Redirect,
+            finalResponse.StatusCode);
+
+        var callback = new Uri(
+            client.BaseAddress!,
+            finalResponse.Headers.Location!);
+
+        Assert.Equal("client.example", callback.Host);
+        Assert.Equal("/callback", callback.AbsolutePath);
+
+        // 6. A successful reauthentication produces an authorization code.
+        var parameters = QueryHelpers.ParseQuery(callback.Query);
+
+        Assert.True(
+            parameters.TryGetValue("code", out var code));
+
+        Assert.False(
+            string.IsNullOrWhiteSpace(code.ToString()));
+
+        Assert.Equal(
+            "test-state-123",
+            parameters["state"].ToString());
     }
 
     private static HttpClient CreateClient(

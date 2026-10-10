@@ -37,28 +37,36 @@ namespace MedicalOffice.Api.Controllers
                     "The OpenID Connect request cannot be retrieved.");
 
             // Authenticate using the Identity browser cookie.
+            const string freshLoginKey = "FreshLoginRequested";
+
             var result = await HttpContext.AuthenticateAsync(
-    IdentityConstants.ApplicationScheme);
+                IdentityConstants.ApplicationScheme);
 
             var authenticated =
                 result.Succeeded && result.Principal is not null;
 
             var issuedUtc = result.Properties?.IssuedUtc;
 
+            // TempData survives the login redirect and is integrity-protected.
+            var reauthenticationCompleted =
+                TempData.Peek(freshLoginKey) is true;
+
             var requiresFreshLogin =
                 request.HasPromptValue(PromptValues.Login) ||
                 request.MaxAge is 0;
 
             var sessionTooOld =
-                authenticated &&
                 request.MaxAge is > 0 &&
                 (issuedUtc is null ||
                  DateTimeOffset.UtcNow - issuedUtc.Value >
                  TimeSpan.FromSeconds(request.MaxAge.Value));
 
-            if (!authenticated || requiresFreshLogin || sessionTooOld)
+            var mustReauthenticate =
+                (requiresFreshLogin || sessionTooOld) &&
+                !reauthenticationCompleted;
+
+            if (!authenticated || mustReauthenticate)
             {
-                // Never display a login page for prompt=none.
                 if (request.HasPromptValue(PromptValues.None))
                 {
                     return Forbid(
@@ -70,62 +78,23 @@ namespace MedicalOffice.Api.Controllers
 
                                 [OpenIddictServerAspNetCoreConstants
                                     .Properties.ErrorDescription] =
-                                    "Fresh user authentication is required."
+                                    "User authentication is required."
                             }),
                         OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
                 }
 
-                // Prevent an existing browser session from satisfying
-                // a request that explicitly requires reauthentication.
-                if (authenticated &&
-                    (requiresFreshLogin || sessionTooOld))
+                // An existing cookie must not satisfy a fresh-login request.
+                if (authenticated && mustReauthenticate)
                 {
                     await HttpContext.SignOutAsync(
                         IdentityConstants.ApplicationScheme);
+
+                    TempData[freshLoginKey] = true;
                 }
 
+                // Preserve the original OAuth/OIDC request.
                 var returnUrl =
                     Request.PathBase + Request.Path + Request.QueryString;
-
-                // Remove one-time reauthentication requirements after
-                // redirecting to the login page, preventing a redirect loop.
-                if (requiresFreshLogin)
-                {
-                    var parameters = Request.Query
-                        .Where(parameter =>
-                            parameter.Key != Parameters.Prompt &&
-                            parameter.Key != Parameters.MaxAge)
-                        .Select(parameter =>
-                            new KeyValuePair<string, StringValues>(
-                                parameter.Key,
-                                parameter.Value))
-                        .ToList();
-
-                    var remainingPrompts = request.GetPromptValues()
-                        .Where(prompt => prompt != PromptValues.Login)
-                        .ToArray();
-
-                    if (remainingPrompts.Length > 0)
-                    {
-                        parameters.Add(
-                            new KeyValuePair<string, StringValues>(
-                                Parameters.Prompt,
-                                string.Join(" ", remainingPrompts)));
-                    }
-
-                    // Preserve a positive max_age constraint.
-                    if (request.MaxAge is > 0)
-                    {
-                        parameters.Add(
-                            new KeyValuePair<string, StringValues>(
-                                Parameters.MaxAge,
-                                request.MaxAge.Value.ToString(
-                                    CultureInfo.InvariantCulture)));
-                    }
-
-                    returnUrl = Request.PathBase + Request.Path +
-                        QueryString.Create(parameters);
-                }
 
                 return RedirectToAction(
                     "Login",
@@ -139,20 +108,18 @@ namespace MedicalOffice.Api.Controllers
                     "The authenticated user principal is missing.");
             }
 
+            // Consume the one-time marker after successful reauthentication.
+            if (reauthenticationCompleted)
+            {
+                TempData.Remove(freshLoginKey);
+            }
+
             // Retrieve the current user from Identity.
             var user = await _userManager.GetUserAsync(
                 result.Principal);
 
             if (user is null ||
-                !await _userManager.IsLockedOutAsync(user) &&
-                !await _userManager.IsEmailConfirmedAsync(user) &&
-                _userManager.Options.SignIn.RequireConfirmedEmail)
-            {
-                return Forbid(
-                    OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
-            }
-
-            if (await _userManager.IsLockedOutAsync(user) ||
+                await _userManager.IsLockedOutAsync(user) ||
                 !await _signInManager.CanSignInAsync(user))
             {
                 return Forbid(
