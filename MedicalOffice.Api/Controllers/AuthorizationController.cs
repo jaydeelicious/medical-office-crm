@@ -43,6 +43,14 @@ namespace MedicalOffice.Api.Controllers
                 if (request.HasPromptValue(PromptValues.None))
                 {
                     return Forbid(
+                        new AuthenticationProperties(new Dictionary<string, string?>
+                        {
+                            [OpenIddictServerAspNetCoreConstants.Properties.Error] =
+                                Errors.LoginRequired,
+
+                            [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
+                                "The user is not logged in."
+                        }),
                         OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
                 }
 
