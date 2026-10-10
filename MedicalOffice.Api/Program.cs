@@ -22,7 +22,7 @@ using OpenIddict.Validation.AspNetCore;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllersWithViews();
 
 builder.Services.AddDbContext<MedicalOfficeDbContext>(
     options =>
@@ -84,7 +84,36 @@ builder.Services
     })
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<MedicalOfficeDbContext>()
+    .AddSignInManager()
     .AddDefaultTokenProviders();
+
+builder.Services
+    .AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme =
+            IdentityConstants.ApplicationScheme;
+
+        options.DefaultChallengeScheme =
+            IdentityConstants.ApplicationScheme;
+
+        options.DefaultSignInScheme =
+            IdentityConstants.ExternalScheme;
+    })
+    .AddIdentityCookies();
+
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Cookie.Name = "MedicalOffice.Identity";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+
+    options.LoginPath = "/account/login";
+    options.AccessDeniedPath = "/account/access-denied";
+
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+    options.SlidingExpiration = false;
+});
 
 builder.Services.AddAuthorization(options =>
 {
@@ -92,6 +121,15 @@ builder.Services.AddAuthorization(options =>
     {
         policy.AddAuthenticationSchemes(
             OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
+
+        policy.RequireAuthenticatedUser();
+    });
+
+    // Authentication for browser sessions using Identity cookies
+    options.AddPolicy("IdentityCookie", policy =>
+    {
+        policy.AddAuthenticationSchemes(
+            IdentityConstants.ApplicationScheme);
 
         policy.RequireAuthenticatedUser();
     });
