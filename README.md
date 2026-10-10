@@ -25,8 +25,8 @@ The project currently includes a .NET backend for managing patients, doctors and
 - ASP.NET Core integration testing
 - SQLite (integration test database)
 
-### Frontend (Planned)
-- Angular
+### Frontend 
+- Angular 22
 
 ## Architecture
 
@@ -37,6 +37,7 @@ The solution is divided into:
 - `MedicalOffice.Domain` - domain entities and enums
 - `MedicalOffice.Infrastructure` - EF Core persistence, repositories and ASP.NET Core Identity
 - `MedicalOffice.Tests` - unit and integration tests
+- `medical-office-web` - Angular frontend application
 
 ## Features
 
@@ -60,6 +61,8 @@ The solution is divided into:
 - .NET 10 SDK
 - SQL Server LocalDB or another SQL Server instance
 - EF Core CLI tools
+- Node.js 24
+- npm
 
 ### Configure the database
 
@@ -79,11 +82,37 @@ dotnet run --project MedicalOffice.Api --launch-profile https
 The API will be available at `https://localhost:7234`.
 
 - Swagger UI: `https://localhost:7234/swagger`
+
+### Run the frontend
+
+From the repository root:
+
+```bash
+cd medical-office-web
+npm ci
+npm start
+```
+
+The Angular application will be available at `http://localhost:4200`.
+
+To build the frontend:
+
+```bash
+npm run build
+```
   
 ### Run tests
 
+Backend tests (from the repository root):
+
 ```bash
 dotnet test
+```
+
+Frontend tests (from `medical-office-web`):
+
+```bash
+npm test -- --watch=false
 ```
 
 ## Roadmap
