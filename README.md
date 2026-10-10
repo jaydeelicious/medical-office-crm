@@ -51,6 +51,7 @@ The solution is divided into:
 - OAuth 2.0 Authorization Code Flow with PKCE
 - OpenID Connect authorization and token endpoints
 - Bearer-token authentication for protected API endpoints
+- Automatic OpenIddict client registration for the Angular SPA
 
 ## Running Locally
 
@@ -89,7 +90,7 @@ dotnet test
 
 ### v0.1.0
 - Angular frontend
-- Web-client registration and authentication integration
+- Authentication integration
 - Basic patient, doctor, and appointment management UI
 - Automated testing and CI
 - Containerized development setup
