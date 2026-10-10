@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Configuration;
 
 namespace MedicalOffice.Tests.Integration.Authentication
 {
@@ -75,6 +76,15 @@ namespace MedicalOffice.Tests.Integration.Authentication
             return new WebApplicationFactory<Program>()
                 .WithWebHostBuilder(builder =>
                 {
+                    builder.ConfigureAppConfiguration((context, config) =>
+                    {
+                        config.AddInMemoryCollection(
+                            new Dictionary<string, string?>
+                            {
+                                ["OpenIddict:Clients:SeedOnStartup"] = "false"
+                            });
+                    });
+
                     builder.UseEnvironment("Development");
                 });
         }

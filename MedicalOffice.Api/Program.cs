@@ -19,6 +19,9 @@ using MedicalOffice.Api.Extensions;
 
 using OpenIddict.Validation.AspNetCore;
 
+using MedicalOffice.Api.Authentication;
+using Microsoft.AspNetCore.Mvc;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -43,7 +46,8 @@ builder.Services.AddOpenIddict()
 builder.Services.AddOpenIddictServer(
     builder.Environment,
     builder.Configuration);
-    
+
+builder.Services.AddScoped<OpenIddictClientSeeder>();
 
 builder.Services.AddScoped<IPatientRepository, PatientRepository>();
 builder.Services.AddScoped<PatientService>();
@@ -136,6 +140,17 @@ builder.Services.AddAuthorization(options =>
 });
 
 var app = builder.Build();
+
+if (app.Configuration.GetValue(
+    "OpenIddict:Clients:SeedOnStartup", true))
+{
+    using var scope = app.Services.CreateScope();
+
+    var seeder = scope.ServiceProvider
+        .GetRequiredService<OpenIddictClientSeeder>();
+
+    await seeder.SeedAsync();
+}
 
 app.UseExceptionHandler();
 
