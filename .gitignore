@@ -6,3 +6,7 @@ obj/
 *.pfx
 *.p12
 *.key
+
+# Local AI tooling configuration
+**/.codex/config.toml
+**/.mcp.json
