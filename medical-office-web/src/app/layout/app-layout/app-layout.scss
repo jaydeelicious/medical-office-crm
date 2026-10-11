@@ -1,0 +1,115 @@
+
+:host {
+  display: block;
+  min-height: 100vh;
+}
+
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: #17243b;
+  color: white;
+  padding: 24px 16px;
+
+  .brand {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 32px;
+  }
+
+  nav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  nav a {
+    padding: 12px 14px;
+    color: #d5ddeb;
+    text-decoration: none;
+    border-radius: 8px;
+
+    &:hover,
+    &.active {
+      background: #304361;
+      color: white;
+    }
+
+    &:focus-visible {
+      outline: 2px solid white;
+      outline-offset: 2px;
+    }
+  }
+}
+
+.main-container {
+  flex: 1;
+  min-width: 0;
+  background: #f5f7fb;
+}
+
+.app-header {
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 32px;
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+  font-weight: 600;
+}
+
+.app-content {
+  padding: 32px;
+}
+
+.menu-toggle,
+.sidebar-backdrop {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 20;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+
+    &.sidebar-open {
+      transform: translateX(0);
+    }
+  }
+
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    border: 0;
+    background: rgb(0 0 0 / 45%);
+  }
+
+  .menu-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 0;
+    font-size: 1.5rem;
+    cursor: pointer;
+  }
+
+  .app-header {
+    padding: 0 16px;
+  }
+
+  .app-content {
+    padding: 20px;
+  }
+}
