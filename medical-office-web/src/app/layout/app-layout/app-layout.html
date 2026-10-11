@@ -1,47 +1,77 @@
+
 <div class="app-layout">
-    <aside id="main-sidebar" class="sidebar" [class.sidebar-open]="menuOpen()">
-        <div class="brand">Medical Office CRM</div>
+  <aside
+    id="main-sidebar"
+    class="sidebar"
+    [class.sidebar-open]="menuOpen()"
+  >
+    <a class="brand" routerLink="/dashboard" (click)="closeMenu()">
+      <svg lucideHeartPulse aria-hidden="true"></svg>
+      <span>MedicalOffice</span>
+    </a>
 
-        <nav aria-label="Main navigation">
-            @for (item of navigation; track item.path) {
-                <a
-                    [routerLink]="item.path"
-                    routerLinkActive="active"
-                    (click)="menuOpen.set(false)"
-                >
-                    {{ item.label }}
-                </a>
+    <nav aria-label="Main navigation">
+      @for (item of navigation; track item.path) {
+        <a
+          class="nav-link"
+          [routerLink]="item.path"
+          routerLinkActive="active"
+          (click)="closeMenu()"
+        >
+          @switch (item.path) {
+            @case ('/dashboard') {
+              <svg lucideLayoutDashboard aria-hidden="true"></svg>
             }
-        </nav>
-    </aside>
+            @case ('/patients') {
+              <svg lucideUsersRound aria-hidden="true"></svg>
+            }
+            @case ('/doctors') {
+              <svg lucideStethoscope aria-hidden="true"></svg>
+            }
+            @case ('/appointments') {
+              <svg lucideCalendarDays aria-hidden="true"></svg>
+            }
+          }
 
-    @if (menuOpen()) {
-        <button 
-            class="sidebar-backdrop"
-            type="button"
-            aria-label="Close navigation menu"
-            (click)="menuOpen.set(false)"
-        ></button>
-    }
+          <span>{{ item.label }}</span>
+        </a>
+      }
+    </nav>
+  </aside>
 
-    <div class="main-container">
-        <header class="app-header">
-            <button
-            class="menu-toggle"
-            type="button"
-            [attr.aria-expanded]="menuOpen()"
-            aria-controls="main-sidebar"
-            aria-label="Toggle navigation menu"
-            (click)="toggleMenu()"
-            >
-                ☰
-            </button>
+  @if (menuOpen()) {
+    <button
+      class="sidebar-backdrop"
+      type="button"
+      aria-label="Close navigation menu"
+      (click)="closeMenu()"
+    ></button>
+  }
 
-            <span>Medical Office CRM</span>
-        </header>
+  <div class="main-container">
+    <header class="app-header">
+      <div class="header-left">
+        <button
+          class="menu-toggle"
+          type="button"
+          aria-controls="main-sidebar"
+          [attr.aria-expanded]="menuOpen()"
+          aria-label="Toggle navigation menu"
+          (click)="toggleMenu()"
+        >
+          <svg lucideMenu aria-hidden="true"></svg>
+        </button>
 
-        <main class="app-content">
-            <router-outlet />
-        </main>
-    </div>
+        <span class="page-title">{{ pageTitle() }}</span>
+      </div>
+
+      <div class="header-right">
+        <svg lucideCircleUserRound aria-hidden="true"></svg>
+      </div>
+    </header>
+
+    <main class="app-content">
+      <router-outlet />
+    </main>
+  </div>
 </div>
