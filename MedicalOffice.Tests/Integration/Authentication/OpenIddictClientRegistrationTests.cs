@@ -115,6 +115,7 @@ public class OpenIddictClientRegistrationTests
         var expected = new[]
         {
             Permissions.Endpoints.Authorization,
+            Permissions.Endpoints.EndSession,
             Permissions.Endpoints.Token,
             Permissions.GrantTypes.AuthorizationCode,
             Permissions.GrantTypes.RefreshToken,
