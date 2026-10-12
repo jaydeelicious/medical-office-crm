@@ -1,0 +1,49 @@
+.not-found {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+  text-align: center;
+}
+
+.error-code {
+  font-size: clamp(5rem, 15vw, 9rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.06em;
+  color: var(--color-text);
+  opacity: 0.15;
+}
+
+h1 {
+  margin: 24px 0 12px;
+  font-size: 1.8rem;
+}
+
+p {
+  max-width: 420px;
+  margin: 0 0 32px;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+.back-link {
+  display: inline-flex;
+  padding: 12px 20px;
+  border-radius: 8px;
+  background: var(--color-nav-active);
+  color: var(--color-text);
+  text-decoration: none;
+  font-weight: 500;
+
+  &:hover {
+    background: #38383d;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-text);
+    outline-offset: 3px;
+  }
+}

@@ -1,1 +1,37 @@
 /* You can add global styles to this file, and also import other style files */
+
+
+:root {
+  font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+  color-scheme: dark;
+
+  --color-background: #0b0b0d;
+  --color-sidebar: #101013;
+  --color-surface: #161619;
+  --color-nav-active: #29292d;
+  --color-border: #252529;
+  --color-text: #f5f5f6;
+  --color-text-muted: #a2a2aa;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-background);
+  color: var(--color-text);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
