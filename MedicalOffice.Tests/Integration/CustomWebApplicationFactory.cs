@@ -25,7 +25,8 @@ namespace MedicalOffice.Tests.Integration
                 config.AddInMemoryCollection(
                     new Dictionary<string, string?>
                     {
-                        ["OpenIddict:Clients:SeedOnStartup"] = "false"
+                        ["OpenIddict:Clients:SeedOnStartup"] = "false",
+                        ["DevelopmentTestUser:SeedOnStartup"] = "false"
                     });
             });
 

@@ -16,6 +16,7 @@ namespace MedicalOffice.Api.Extensions
                     // OAuth 2.0 / OpenID Connect endpoints
                     options.SetAuthorizationEndpointUris("/connect/authorize");
                     options.SetTokenEndpointUris("/connect/token");
+                    options.SetEndSessionEndpointUris("/connect/logout");
 
                     // Authorization Code + PKCE
                     options.AllowAuthorizationCodeFlow();
@@ -66,7 +67,8 @@ namespace MedicalOffice.Api.Extensions
                     // ASP.NET Core integration
                     options.UseAspNetCore()
                         .EnableAuthorizationEndpointPassthrough()
-                        .EnableTokenEndpointPassthrough();
+                        .EnableTokenEndpointPassthrough()
+                        .EnableEndSessionEndpointPassthrough();
                 })
                 .AddValidation(options =>
                 {

@@ -162,7 +162,8 @@ if (app.Configuration.GetValue(
     await seeder.SeedAsync();
 }
 
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() &&
+    app.Configuration.GetValue<bool>("DevelopmentTestUser:SeedOnStartup"))
 {
     using var scope = app.Services.CreateScope();
 
