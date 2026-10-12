@@ -8,6 +8,7 @@ import {
 } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { filter, firstValueFrom } from 'rxjs';
+import { of } from 'rxjs';
 
 import { routes } from './app.routes';
 
@@ -20,6 +21,8 @@ describe('Application routing', () => {
             provide: OidcSecurityService,
             useValue: {
                 authorize: vi.fn(),
+                logoff: vi.fn().mockReturnValue(of({})),
+                isAuthenticated$: of({ isAuthenticated: false }),
             },
         },
       ],

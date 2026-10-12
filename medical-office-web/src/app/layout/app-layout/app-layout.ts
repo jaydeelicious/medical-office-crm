@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { AsyncPipe } from '@angular/common';
 import {
   NavigationEnd,
   Router,
@@ -16,6 +17,7 @@ import {
   LucideCircleUserRound,
   LucideMenu,
   LucideLogIn,
+  LucideLogOut,
 } from '@lucide/angular';
 import { filter } from 'rxjs';
 import { OidcSecurityService } from 'angular-auth-oidc-client';
@@ -23,6 +25,7 @@ import { OidcSecurityService } from 'angular-auth-oidc-client';
 @Component({
   selector: 'app-app-layout',
   imports: [
+    AsyncPipe,
     RouterLink,
     RouterLinkActive,
     RouterOutlet,
@@ -34,6 +37,7 @@ import { OidcSecurityService } from 'angular-auth-oidc-client';
     LucideCircleUserRound,
     LucideMenu,
     LucideLogIn,
+    LucideLogOut,
   ],
   templateUrl: './app-layout.html',
   styleUrl: './app-layout.scss'
@@ -41,6 +45,17 @@ import { OidcSecurityService } from 'angular-auth-oidc-client';
 export class AppLayout {
   private readonly router = inject(Router);
   private readonly oidcSecurityService = inject(OidcSecurityService);
+
+  protected readonly isAuthenticated$ = 
+    this.oidcSecurityService.isAuthenticated$;
+
+  protected login(): void {
+    this.oidcSecurityService.authorize();
+  }
+
+  protected logout(): void {
+    this.oidcSecurityService.logoff().subscribe();
+  }
 
   protected readonly menuOpen = signal(false);
   protected readonly pageTitle = signal('Dashboard');
@@ -91,9 +106,5 @@ export class AppLayout {
     const current = this.navigation.find((item) => item.path == path);
 
     this.pageTitle.set(current?.label ?? 'Dashboard');
-  }
-
-  protected login(): void {
-    this.oidcSecurityService.authorize();
   }
 }

@@ -72,16 +72,33 @@
         <svg lucideCircleUserRound aria-hidden="true"></svg>
       </div> -->
       
-      <div class="header-right">
-        <button
-            type="button"
-            class="login-button"
-            (click)="login()"
-        >
-            <svg lucideLogIn aria-hidden="true"></svg>
-            <span>Login</span>
-        </button>
-      </div>
+      
+        
+        <div class="header-right">
+        @if (isAuthenticated$ | async; as auth) {
+            @if (auth.isAuthenticated) {
+            <button
+                type="button"
+                class="auth-button"
+                (click)="logout()"
+            >
+                <svg lucideLogOut aria-hidden="true"></svg>
+                <span>Logout</span>
+            </button>
+            } @else {
+            <button
+                type="button"
+                class="auth-button"
+                (click)="login()"
+            >
+                <svg lucideLogIn aria-hidden="true"></svg>
+                <span>Login</span>
+            </button>
+            }
+        }
+        </div>
+
+
 
     </header>
 
