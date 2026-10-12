@@ -15,6 +15,7 @@ import {
   LucideCalendarDays,
   LucideCircleUserRound,
   LucideMenu,
+  LucideLogIn,
 } from '@lucide/angular';
 import { filter } from 'rxjs';
 import { OidcSecurityService } from 'angular-auth-oidc-client';
@@ -32,6 +33,7 @@ import { OidcSecurityService } from 'angular-auth-oidc-client';
     LucideCalendarDays,
     LucideCircleUserRound,
     LucideMenu,
+    LucideLogIn,
   ],
   templateUrl: './app-layout.html',
   styleUrl: './app-layout.scss'

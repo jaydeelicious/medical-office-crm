@@ -1,5 +1,6 @@
 
 import { TestBed } from '@angular/core/testing';
+import { OidcSecurityService } from 'angular-auth-oidc-client';
 import {
   NavigationEnd,
   provideRouter,
@@ -13,7 +14,15 @@ import { routes } from './app.routes';
 describe('Application routing', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [provideRouter(routes)],
+      providers: [
+        provideRouter(routes),
+        {
+            provide: OidcSecurityService,
+            useValue: {
+                authorize: vi.fn(),
+            },
+        },
+      ],
     });
   });
 
