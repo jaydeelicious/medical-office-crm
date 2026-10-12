@@ -27,6 +27,16 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AngularClient", policy =>
+    {
+        policy.WithOrigins("http://localhost:4200")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
 builder.Services.AddDbContext<MedicalOfficeDbContext>(
     options =>
     {
@@ -152,6 +162,15 @@ if (app.Configuration.GetValue(
     await seeder.SeedAsync();
 }
 
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+
+    await DevelopmentUserSeeder.SeedAsync(
+        scope.ServiceProvider,
+        app.Configuration);
+}
+
 app.UseExceptionHandler();
 
 // Configure the HTTP request pipeline.
@@ -163,6 +182,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseRouting();
+app.UseCors("AngularClient");
 
 app.UseAuthentication();
 app.UseAuthorization();

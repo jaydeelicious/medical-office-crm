@@ -17,6 +17,7 @@ import {
   LucideMenu,
 } from '@lucide/angular';
 import { filter } from 'rxjs';
+import { OidcSecurityService } from 'angular-auth-oidc-client';
 
 @Component({
   selector: 'app-app-layout',
@@ -37,6 +38,7 @@ import { filter } from 'rxjs';
 })
 export class AppLayout {
   private readonly router = inject(Router);
+  private readonly oidcSecurityService = inject(OidcSecurityService);
 
   protected readonly menuOpen = signal(false);
   protected readonly pageTitle = signal('Dashboard');
@@ -87,5 +89,9 @@ export class AppLayout {
     const current = this.navigation.find((item) => item.path == path);
 
     this.pageTitle.set(current?.label ?? 'Dashboard');
+  }
+
+  protected login(): void {
+    this.oidcSecurityService.authorize();
   }
 }
