@@ -169,6 +169,13 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+app.MapGet("/api/health", () =>
+    Results.Ok(new
+    {
+        Status = "Healthy"
+    }))
+    .AllowAnonymous();
+
 app.Run();
 
 public partial class Program { }

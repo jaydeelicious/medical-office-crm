@@ -10,3 +10,35 @@
     <p>Dashboard features are coming soon.</p>
   </section>
 </section>
+
+
+<section class="api-status-card" aria-labelledby="api-status-heading">
+  <div class="api-status-header">
+    <h2 id="api-status-heading">Backend API</h2>
+
+    @switch (apiStatus()) {
+      @case ('checking') {
+        <span class="status-badge checking">Checking...</span>
+      }
+      @case ('connected') {
+        <span class="status-badge connected">Connected</span>
+      }
+      @case ('unavailable') {
+        <span class="status-badge unavailable">Unavailable</span>
+      }
+    }
+  </div>
+
+  @switch (apiStatus()) {
+    @case ('checking') {
+      <p>Checking backend connectivity...</p>
+    }
+    @case ('connected') {
+      <p>ASP.NET Core API is responding successfully.</p>
+    }
+    @case ('unavailable') {
+      <p>Unable to connect to the backend API.</p>
+    }
+  }
+</section>
+
