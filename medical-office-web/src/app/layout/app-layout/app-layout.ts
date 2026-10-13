@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { AsyncPipe } from '@angular/common';
 import {
   NavigationEnd,
   Router,
@@ -15,12 +16,16 @@ import {
   LucideCalendarDays,
   LucideCircleUserRound,
   LucideMenu,
+  LucideLogIn,
+  LucideLogOut,
 } from '@lucide/angular';
 import { filter } from 'rxjs';
+import { OidcSecurityService } from 'angular-auth-oidc-client';
 
 @Component({
   selector: 'app-app-layout',
   imports: [
+    AsyncPipe,
     RouterLink,
     RouterLinkActive,
     RouterOutlet,
@@ -31,12 +36,26 @@ import { filter } from 'rxjs';
     LucideCalendarDays,
     LucideCircleUserRound,
     LucideMenu,
+    LucideLogIn,
+    LucideLogOut,
   ],
   templateUrl: './app-layout.html',
   styleUrl: './app-layout.scss'
 })
 export class AppLayout {
   private readonly router = inject(Router);
+  private readonly oidcSecurityService = inject(OidcSecurityService);
+
+  protected readonly isAuthenticated$ = 
+    this.oidcSecurityService.isAuthenticated$;
+
+  protected login(): void {
+    this.oidcSecurityService.authorize();
+  }
+
+  protected logout(): void {
+    this.oidcSecurityService.logoff().subscribe();
+  }
 
   protected readonly menuOpen = signal(false);
   protected readonly pageTitle = signal('Dashboard');

@@ -42,6 +42,7 @@ namespace MedicalOffice.Api.Authentication
                 {
                     Permissions.Endpoints.Authorization,
                     Permissions.Endpoints.Token,
+                    Permissions.Endpoints.EndSession,
 
                     Permissions.GrantTypes.AuthorizationCode,
                     Permissions.GrantTypes.RefreshToken,

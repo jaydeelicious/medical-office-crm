@@ -1,5 +1,6 @@
 
 import { TestBed } from '@angular/core/testing';
+import { OidcSecurityService } from 'angular-auth-oidc-client';
 import {
   NavigationEnd,
   provideRouter,
@@ -7,13 +8,24 @@ import {
 } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { filter, firstValueFrom } from 'rxjs';
+import { of } from 'rxjs';
 
 import { routes } from './app.routes';
 
 describe('Application routing', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [provideRouter(routes)],
+      providers: [
+        provideRouter(routes),
+        {
+            provide: OidcSecurityService,
+            useValue: {
+                authorize: vi.fn(),
+                logoff: vi.fn().mockReturnValue(of({})),
+                isAuthenticated$: of({ isAuthenticated: false }),
+            },
+        },
+      ],
     });
   });
 

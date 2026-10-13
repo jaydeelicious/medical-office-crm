@@ -44,6 +44,13 @@ export const routes: Routes = [
         ],
     },
     {
+        path: 'auth/callback',
+        loadComponent: () =>
+            import('./features/auth/callback/auth-callback').then(
+            (m) => m.AuthCallback
+            ),
+    },
+    {
         path: '**',
         loadComponent: () =>
             import('./features/not-found/not-found').then(
