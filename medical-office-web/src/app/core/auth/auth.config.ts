@@ -9,6 +9,11 @@ export const authConfig: OpenIdConfiguration = {
   scope: 'openid profile email offline_access',
   responseType: 'code',
   autoUserInfo: false,
-  silentRenew: false,
+
+  // Renew access tokens using refresh tokens.
+  silentRenew: true,
+  useRefreshToken: true,
+  renewTimeBeforeTokenExpiresInSeconds: 60,
+
   logLevel: LogLevel.Warn,
 };
