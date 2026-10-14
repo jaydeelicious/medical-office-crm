@@ -1,5 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { OidcSecurityService } from 'angular-auth-oidc-client';
+import { Observable } from 'rxjs';
 
 const RETURN_URL_KEY = 'medicaloffice.auth.returnUrl';
 
@@ -62,4 +63,8 @@ export class AuthService {
     //         !url.startsWith('/auth')
     //     );
     // }
+
+    getAccessToken(): Observable<string> {
+        return this.oidcSecurityService.getAccessToken();
+    }
 }

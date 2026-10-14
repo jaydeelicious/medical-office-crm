@@ -13,6 +13,7 @@ describe('AuthService', () => {
     isAuthenticated$: authenticationState.asObservable(),
     authorize: vi.fn(),
     logoff: vi.fn().mockReturnValue(of({})),
+    getAccessToken: vi.fn().mockReturnValue(of('test-access-token')),
   };
 
   let service: AuthService;
@@ -124,4 +125,13 @@ describe('AuthService', () => {
     expect(service.consumeReturnUrl())
       .toBe('/patients?tab=active');
   });
+
+  it('retrieves the access token from the OIDC library', async () => {
+    const token = await firstValueFrom(service.getAccessToken());
+
+    expect(token).toBe('test-access-token');
+
+    expect(oidcSecurityServiceMock.getAccessToken)
+      .toHaveBeenCalledOnce();
+  })
 });

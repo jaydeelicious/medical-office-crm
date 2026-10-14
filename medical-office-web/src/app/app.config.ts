@@ -19,12 +19,16 @@ import { authConfig } from './core/auth/auth.config';
 import { apiErrorInterceptor } from './core/http/api-error-interceptor';
 import { routes } from './app.routes';
 
+import { authTokenInterceptor } from './core/http/auth-token-interceptor';
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
     provideHttpClient(
-      withInterceptors([apiErrorInterceptor]),
+      withInterceptors([
+        authTokenInterceptor,
+        apiErrorInterceptor]),
     ),
     provideAuth(
       {
