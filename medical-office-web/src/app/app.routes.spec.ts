@@ -1,6 +1,6 @@
 
 import { TestBed } from '@angular/core/testing';
-import { OidcSecurityService } from 'angular-auth-oidc-client';
+import { AuthService } from './core/auth/auth.service';
 import {
   NavigationEnd,
   provideRouter,
@@ -18,11 +18,11 @@ describe('Application routing', () => {
       providers: [
         provideRouter(routes),
         {
-            provide: OidcSecurityService,
+            provide: AuthService,
             useValue: {
-                authorize: vi.fn(),
-                logoff: vi.fn().mockReturnValue(of({})),
-                isAuthenticated$: of({ isAuthenticated: false }),
+                isAuthenticated$: of({ isAuthenticated: true }),
+                login: vi.fn(),
+                logout: vi.fn(),
             },
         },
       ],
