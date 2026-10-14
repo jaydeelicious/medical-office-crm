@@ -20,7 +20,7 @@ import {
   LucideLogOut,
 } from '@lucide/angular';
 import { filter } from 'rxjs';
-import { OidcSecurityService } from 'angular-auth-oidc-client';
+import { AuthService } from '../../core/auth/auth.service';
 
 @Component({
   selector: 'app-app-layout',
@@ -44,17 +44,17 @@ import { OidcSecurityService } from 'angular-auth-oidc-client';
 })
 export class AppLayout {
   private readonly router = inject(Router);
-  private readonly oidcSecurityService = inject(OidcSecurityService);
+  private readonly authService = inject(AuthService);
 
   protected readonly isAuthenticated$ = 
-    this.oidcSecurityService.isAuthenticated$;
+    this.authService.isAuthenticated$;
 
   protected login(): void {
-    this.oidcSecurityService.authorize();
+    this.authService.login();
   }
 
   protected logout(): void {
-    this.oidcSecurityService.logoff().subscribe();
+    this.authService.logout();
   }
 
   protected readonly menuOpen = signal(false);
