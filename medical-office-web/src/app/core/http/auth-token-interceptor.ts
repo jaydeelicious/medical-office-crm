@@ -48,12 +48,6 @@ function isTrustedApiUrl(url: string): boolean {
             path == trustedPath || 
         path.startsWith(`${trustedPath}/`),
     );
-
-    // return (
-    //     url == apiBaseUrl || 
-    //     url.startsWith(`$(apiBaseUrl)/`) ||
-    //     url.startsWith(`$(apiBaseUrl)?`)
-    // );
 }
 
 export const authTokenInterceptor : HttpInterceptorFn = (

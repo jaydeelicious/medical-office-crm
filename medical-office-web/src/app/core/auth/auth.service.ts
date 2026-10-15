@@ -40,6 +40,16 @@ export class AuthService {
     }
 
     private isSafeReturnUrl(url: string): boolean {
+        const hasControlCharacters = [...url].some((char) => {
+            const code = char.charCodeAt(0);
+
+            return code <= 31 || code === 127;
+        });
+
+        if (url.includes('\\') || hasControlCharacters) {
+            return false;
+        }
+        
         const path = url.split(/[?#]/, 1)[0];
 
         const allowedPaths = [
@@ -51,18 +61,6 @@ export class AuthService {
 
         return allowedPaths.includes(path);
     }
-
-    // private isSafeReturnUrl(url: string): boolean {
-    //     return (
-    //         url.startsWith('/') &&
-    //         !url.startsWith('\\') &&
-    //         !url.startsWith('/\\') &&
-    //         !url.includes('\\') &&
-    //         !url.includes('\r') &&
-    //         !url.includes('\n') && 
-    //         !url.startsWith('/auth')
-    //     );
-    // }
 
     getAccessToken(): Observable<string> {
         return this.oidcSecurityService.getAccessToken();
