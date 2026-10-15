@@ -1,0 +1,32 @@
+<dialog
+  #dialog
+  class="confirm-dialog"
+  [attr.aria-label]="title()"
+  [attr.aria-describedby]="messageId"
+  (cancel)="onNativeCancel($event)"
+>
+  <h2>{{ title() }}</h2>
+
+  <p [id]="messageId">
+    {{ message() }}
+  </p>
+
+  <div class="dialog-actions">
+    <button
+      type="button"
+      class="cancel-button"
+      autofocus
+      (click)="onCancel()"
+    >
+      Cancel
+    </button>
+
+    <button
+      type="button"
+      class="confirm-button"
+      (click)="onConfirm()"
+    >
+      {{ confirmLabel() }}
+    </button>
+  </div>
+</dialog>
