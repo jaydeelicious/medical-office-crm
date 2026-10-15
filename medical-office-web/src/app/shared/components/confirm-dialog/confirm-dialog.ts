@@ -21,6 +21,7 @@ export class ConfirmDialog {
   readonly message = input.required<string>();
   readonly confirmLabel = input('Confirm');
   readonly messageId = `confirm-dialog-message-${nextDialogId++}`;
+  readonly isProcessing = input(false);
 
   readonly confirm = output<void>();
   readonly cancelled = output<void>();
@@ -45,10 +46,18 @@ export class ConfirmDialog {
   }
 
   onConfirm(): void {
+    if (this.isProcessing()) {
+      return;
+    }
+
     this.confirm.emit();
   }
 
   onCancel(): void {
+    if (this.isProcessing()) {
+      return;
+    }
+    
     this.cancelled.emit();
   }
 

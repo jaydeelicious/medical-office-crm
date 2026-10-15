@@ -24,10 +24,20 @@ describe('Patients', () => {
 
     const patientServiceMock = {
         getAll: vi.fn(),
+        delete: vi.fn(),
     };
 
     beforeEach(async () => {
         patientServiceMock.getAll.mockReset();
+        patientServiceMock.delete.mockReset();
+
+        HTMLDialogElement.prototype.showModal = function () {
+            this.setAttribute('open', '');
+        };
+
+        HTMLDialogElement.prototype.close = function () {
+            this.removeAttribute('open');
+        };
 
         await TestBed.configureTestingModule({
             imports: [Patients],
@@ -222,5 +232,184 @@ describe('Patients', () => {
         expect(newPatientLink.textContent).toContain('New patient');
         expect(newPatientLink.getAttribute('href')).toBe('/patients/new');
     });
+
+    
+    it('should open confirmation before deleting a patient', () => {
+        patientServiceMock.getAll.mockReturnValue(of([patient]));
+
+        fixture.detectChanges();
+
+        const deleteButton = fixture.nativeElement.querySelector(
+            '.delete-button',
+        ) as HTMLButtonElement;
+
+        deleteButton.click();
+        fixture.detectChanges();
+
+        expect(component.patientToDelete()).toEqual(patient);
+        expect(patientServiceMock.delete).not.toHaveBeenCalled();
+
+        const dialog = fixture.nativeElement.querySelector(
+            'app-confirm-dialog dialog',
+        ) as HTMLDialogElement;
+
+        expect(dialog).not.toBeNull();
+        expect(dialog.open).toBe(true);
+        expect(dialog.textContent).toContain('John Doe');
+    });
+
+    
+    it('should cancel deletion without calling the API', () => {
+        patientServiceMock.getAll.mockReturnValue(of([patient]));
+
+        fixture.detectChanges();
+
+        component.requestDelete(patient);
+        fixture.detectChanges();
+
+        const cancelButton = fixture.nativeElement.querySelector(
+            'app-confirm-dialog .cancel-button',
+        ) as HTMLButtonElement;
+
+        cancelButton.click();
+        fixture.detectChanges();
+
+        expect(component.patientToDelete()).toBeNull();
+        expect(component.patients()).toEqual([patient]);
+        expect(patientServiceMock.delete).not.toHaveBeenCalled();
+    });
+
+
+    
+    it('should remove the patient after successful deletion', () => {
+        patientServiceMock.getAll.mockReturnValue(of([patient]));
+        patientServiceMock.delete.mockReturnValue(of(void 0));
+
+        fixture.detectChanges();
+
+        component.requestDelete(patient);
+        component.confirmDelete();
+        fixture.detectChanges();
+
+        expect(patientServiceMock.delete).toHaveBeenCalledOnce();
+        expect(patientServiceMock.delete).toHaveBeenCalledWith(
+            patient.id,
+        );
+
+        expect(component.patients()).toEqual([]);
+        expect(component.patientToDelete()).toBeNull();
+        expect(component.isDeleting()).toBe(false);
+
+        const emptyState = fixture.nativeElement.querySelector(
+            'app-empty-state',
+        );
+
+        expect(emptyState).not.toBeNull();
+    });
+
+    
+    it('should preserve the patient when deletion fails', () => {
+        patientServiceMock.getAll.mockReturnValue(of([patient]));
+
+        patientServiceMock.delete.mockReturnValue(
+            throwError(
+                () =>
+                    new HttpErrorResponse({
+                        status: 500,
+                        statusText: 'Internal Server Error',
+                    }),
+            ),
+        );
+
+        fixture.detectChanges();
+
+        component.requestDelete(patient);
+        component.confirmDelete();
+        fixture.detectChanges();
+
+        expect(component.patients()).toEqual([patient]);
+        expect(component.patientToDelete()).toBeNull();
+        expect(component.isDeleting()).toBe(false);
+
+        expect(component.deleteError()).toContain(
+            'Unable to delete the patient',
+        );
+
+        const errorMessage = fixture.nativeElement.querySelector(
+            'app-error-message',
+        );
+
+        expect(errorMessage).not.toBeNull();
+    });
+
+    
+    it('should prevent duplicate deletion requests', () => {
+        const response = new Subject<void>();
+
+        patientServiceMock.getAll.mockReturnValue(of([patient]));
+        patientServiceMock.delete.mockReturnValue(
+            response.asObservable(),
+        );
+
+        fixture.detectChanges();
+
+        component.requestDelete(patient);
+
+        component.confirmDelete();
+        component.confirmDelete();
+
+        expect(patientServiceMock.delete).toHaveBeenCalledOnce();
+        expect(component.isDeleting()).toBe(true);
+
+        response.next();
+        response.complete();
+
+        expect(component.isDeleting()).toBe(false);
+        expect(component.patients()).toEqual([]);
+    });
+
+
+    
+    it('should handle deletion conflicts', () => {
+        patientServiceMock.getAll.mockReturnValue(of([patient]));
+
+        patientServiceMock.delete.mockReturnValue(
+            throwError(
+                () => new HttpErrorResponse({ status: 409 }),
+            ),
+        );
+
+        fixture.detectChanges();
+
+        component.requestDelete(patient);
+        component.confirmDelete();
+
+        expect(component.patients()).toEqual([patient]);
+        expect(component.deleteError()).toContain(
+            'existing related records',
+        );
+    });
+
+    
+    it('should handle forbidden deletion requests', () => {
+        patientServiceMock.getAll.mockReturnValue(of([patient]));
+
+        patientServiceMock.delete.mockReturnValue(
+            throwError(
+                () => new HttpErrorResponse({ status: 403 }),
+            ),
+        );
+
+        fixture.detectChanges();
+
+        component.requestDelete(patient);
+        component.confirmDelete();
+
+        expect(component.patients()).toEqual([patient]);
+        expect(component.deleteError()).toContain(
+            'You do not have permission to delete patients.',
+        );
+    });
+
 
 });

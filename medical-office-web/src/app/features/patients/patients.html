@@ -11,6 +11,12 @@
     </a>
   </header>
 
+  @if (deleteError(); as message) {
+    <div class="delete-error">
+      <app-error-message [message]="message" />
+    </div>
+  }
+
   @if (isLoading()) {
     <app-loading-indicator
       message="Loading patients..."
@@ -48,28 +54,59 @@
               </td>
 
               <td>{{ patient.email ?? '—' }}</td>
-
               <td>{{ patient.phone ?? '—' }}</td>
-
               <td>{{ patient.dateOfBirth ?? '—' }}</td>
 
               <td>
-                <a
-                  class="details-link"
-                  [routerLink]="['/patients', patient.id]"
-                  [attr.aria-label]="
-                    'View details for ' +
-                    patient.firstName + ' ' +
-                    patient.lastName
-                  "
-                >
-                  View details
-                </a>
+                <div class="row-actions">
+                  <a
+                    class="details-link"
+                    [routerLink]="['/patients', patient.id]"
+                    [attr.aria-label]="
+                      'View details for ' +
+                      patient.firstName + ' ' +
+                      patient.lastName
+                    "
+                  >
+                    View details
+                  </a>
+
+                  <button
+                    type="button"
+                    class="delete-button"
+                    [disabled]="isDeleting()"
+                    [attr.aria-label]="
+                      'Delete ' +
+                      patient.firstName + ' ' +
+                      patient.lastName
+                    "
+                    (click)="requestDelete(patient)"
+                  >
+                    Delete
+                  </button>
+                </div>
               </td>
             </tr>
           }
         </tbody>
       </table>
     </div>
+  }
+
+  @if (patientToDelete(); as patient) {
+    <app-confirm-dialog
+      [open]="true"
+      title="Delete patient?"
+      [message]="
+        'Are you sure you want to delete ' +
+        patient.firstName + ' ' +
+        patient.lastName +
+        '? This action cannot be undone.'
+      "
+      confirmLabel="Delete patient"
+      [isProcessing]="isDeleting()"
+      (confirm)="confirmDelete()"
+      (cancelled)="cancelDelete()"
+    />
   }
 </section>
