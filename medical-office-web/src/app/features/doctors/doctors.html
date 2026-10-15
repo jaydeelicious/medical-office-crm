@@ -1,4 +1,77 @@
-<section>
-  <h1>Doctors</h1>
-  <p>Doctors management features are coming soon.</p>
+
+<section class="doctors-page">
+  <header class="page-heading">
+    <div>
+      <h1>Doctors</h1>
+      <p>View and manage doctor records.</p>
+    </div>
+
+    <a class="primary-button" routerLink="/doctors/new">
+      New doctor
+    </a>
+  </header>
+
+  @if (isLoading()) {
+    <app-loading-indicator
+      message="Loading doctors..."
+    />
+  } @else if (errorMessage(); as message) {
+    <app-error-message
+      [message]="message"
+      [retryable]="canRetry()"
+      (retry)="loadDoctors()"
+    />
+  } @else if (doctors().length === 0) {
+    <app-empty-state
+      title="No doctors found"
+      description="There are no doctor records to display."
+    />
+  } @else {
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Specialty</th>
+            <th scope="col">Email</th>
+            <th scope="col">Phone</th>
+            <th scope="col">Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          @for (doctor of doctors(); track doctor.id) {
+            <tr>
+              <td class="doctor-name">
+                {{ doctor.firstName }}
+                {{ doctor.lastName }}
+              </td>
+
+              <td>{{ doctor.specialty }}</td>
+
+              <td>{{ doctor.email ?? '—' }}</td>
+
+              <td>{{ doctor.phone ?? '—' }}</td>
+
+              <td>
+                <div class="row-actions">
+                  <a
+                    class="details-link"
+                    [routerLink]="['/doctors', doctor.id]"
+                    [attr.aria-label]="
+                      'View details for ' +
+                      doctor.firstName + ' ' +
+                      doctor.lastName
+                    "
+                  >
+                    View details
+                  </a>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
 </section>

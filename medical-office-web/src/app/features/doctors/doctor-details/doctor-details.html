@@ -1,0 +1,56 @@
+
+<section class="doctor-details-page">
+  <a class="back-link" routerLink="/doctors">
+    ← Back to doctors
+  </a>
+
+  <header class="page-heading">
+    <h1>Doctor details</h1>
+    <p>View doctor information.</p>
+  </header>
+
+  @if (isLoading()) {
+    <app-loading-indicator
+      message="Loading doctor details..."
+    />
+  } @else if (errorMessage(); as message) {
+    <app-error-message
+      [message]="message"
+      [retryable]="canRetry()"
+      (retry)="loadDoctor()"
+    />
+  } @else if (doctor(); as doctor) {
+    <div class="details-card">
+      <h2>
+        {{ doctor.firstName }} {{ doctor.lastName }}
+      </h2>
+
+      <dl class="doctor-fields">
+        <div class="field">
+          <dt>First name</dt>
+          <dd>{{ doctor.firstName }}</dd>
+        </div>
+
+        <div class="field">
+          <dt>Last name</dt>
+          <dd>{{ doctor.lastName }}</dd>
+        </div>
+
+        <div class="field">
+          <dt>Specialty</dt>
+          <dd>{{ doctor.specialty }}</dd>
+        </div>
+
+        <div class="field">
+          <dt>Email</dt>
+          <dd>{{ doctor.email ?? '—' }}</dd>
+        </div>
+
+        <div class="field">
+          <dt>Phone</dt>
+          <dd>{{ doctor.phone ?? '—' }}</dd>
+        </div>
+      </dl>
+    </div>
+  }
+</section>

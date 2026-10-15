@@ -58,6 +58,13 @@ export const routes: Routes = [
                     ),
             },
             {
+                path: 'doctors/:id',
+                loadComponent: () =>
+                    import('./features/doctors/doctor-details/doctor-details').then(
+                        (m) => m.DoctorDetails
+                    ),
+            },
+            {
                 path: 'appointments',
                 loadComponent: () =>
                     import('./features/appointments/appointments').then(
