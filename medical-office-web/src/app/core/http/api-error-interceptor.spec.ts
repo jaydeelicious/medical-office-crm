@@ -75,4 +75,78 @@ describe('apiErrorInterceptor', () => {
     expect(receivedError).toBeInstanceOf(HttpErrorResponse);
     expect(receivedError?.status).toBe(0);
   });
+
+  
+it('preserves 401 authentication errors', () => {
+    let receivedError: HttpErrorResponse | undefined;
+
+    http.get('/api/patients').subscribe({
+      error: (error: HttpErrorResponse) => {
+        receivedError = error;
+      },
+    });
+
+    const request = httpMock.expectOne('/api/patients');
+
+    request.flush(
+      { title: 'Unauthorized' },
+      {
+        status: 401,
+        statusText: 'Unauthorized',
+      },
+    );
+
+    expect(receivedError).toBeInstanceOf(HttpErrorResponse);
+    expect(receivedError?.status).toBe(401);
+  });
+
+  
+it('preserves 403 authorization errors', () => {
+    let receivedError: HttpErrorResponse | undefined;
+
+    http.get('/api/patients').subscribe({
+      error: (error: HttpErrorResponse) => {
+        receivedError = error;
+      },
+    });
+
+    const request = httpMock.expectOne('/api/patients');
+
+    request.flush(
+      { title: 'Forbidden' },
+      {
+        status: 403,
+        statusText: 'Forbidden',
+      },
+    );
+
+    expect(receivedError).toBeInstanceOf(HttpErrorResponse);
+    expect(receivedError?.status).toBe(403);
+  });
+
+  
+it('does not retry requests after a 401 response', () => {
+    const receivedErrors: HttpErrorResponse[] = [];
+
+    http.get('/api/patients').subscribe({
+      error: (error: HttpErrorResponse) => {
+        receivedErrors.push(error);
+      },
+    });
+
+    const request = httpMock.expectOne('/api/patients');
+
+    request.flush(
+      { title: 'Unauthorized' },
+      {
+        status: 401,
+        statusText: 'Unauthorized',
+      },
+    );
+
+    expect(receivedErrors).toHaveLength(1);
+    expect(receivedErrors[0].status).toBe(401);
+
+    httpMock.expectNone('/api/patients');
+  });
 });

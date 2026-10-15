@@ -10,10 +10,36 @@ export const apiErrorInterceptor: HttpInterceptorFn = (request, next) => {
       }
 
       if (isDevMode()) {
-        if (error.status === 0) {
-          console.error('API network or connection error:', error.message);
-        } else if (error.status >= 500) {
-          console.error(`API server error (${error.status}):`, error.message);
+        switch (error.status) {
+          case 0:
+            console.error(
+              'API network or connection error:',
+              error.message,
+            );
+            break;
+
+          case 401: 
+            console.warn(
+              'API authentication required (401):',
+              request.url,
+            );
+            break;
+
+          case 403: 
+            console.warn(
+              'API access forbidden (403):',
+              request.url,
+            );
+            break;
+          
+          default:
+            if (error.status >= 500) {
+              console.error(
+                `API server error (${error.status}):`,
+                error.message,
+              );
+            }
+            break;
         }
       }
 
