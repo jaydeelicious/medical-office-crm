@@ -1,4 +1,71 @@
-<section>
-  <h1>Patients</h1>
-  <p>Patient management features are coming soon.</p>
+
+<section class="patients-page">
+  <header class="page-heading">
+    <div>
+      <h1>Patients</h1>
+      <p>View and manage patient records.</p>
+    </div>
+  </header>
+
+  @if (isLoading()) {
+    <app-loading-indicator
+      message="Loading patients..."
+    />
+  } @else if (errorMessage(); as message) {
+    <app-error-message
+      [message]="message"
+      [retryable]="canRetry()"
+      (retry)="loadPatients()"
+    />
+  } @else if (patients().length === 0) {
+    <app-empty-state
+      title="No patients found"
+      description="There are no patient records to display."
+    />
+  } @else {
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Email</th>
+            <th scope="col">Phone</th>
+            <th scope="col">Date of birth</th>
+            <th scope="col">Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          @for (patient of patients(); track patient.id) {
+            <tr>
+              <td class="patient-name">
+                {{ patient.firstName }}
+                {{ patient.lastName }}
+              </td>
+
+              <td>{{ patient.email ?? '—' }}</td>
+
+              <td>{{ patient.phone ?? '—' }}</td>
+
+              <td>{{ patient.dateOfBirth ?? '—' }}</td>
+
+              <td>
+                <a
+                  class="details-link"
+                  [routerLink]="['/patients', patient.id]"
+                  [attr.aria-label]="
+                    'View details for ' +
+                    patient.firstName + ' ' +
+                    patient.lastName
+                  "
+                >
+                  View details
+                </a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
 </section>

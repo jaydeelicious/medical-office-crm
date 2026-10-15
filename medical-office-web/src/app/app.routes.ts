@@ -30,6 +30,13 @@ export const routes: Routes = [
                     ),
             },
             {
+                path: 'patients/:id',
+                loadComponent: () =>
+                    import('./features/patients/patient-details/patient-details').then(
+                        (m) => m.PatientDetails
+                    ),
+            },
+            {
                 path: 'doctors',
                 loadComponent: () =>
                     import('./features/doctors/doctors').then(
