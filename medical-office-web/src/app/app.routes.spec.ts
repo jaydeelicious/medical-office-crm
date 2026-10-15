@@ -7,23 +7,37 @@ import {
   Router,
 } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { filter, firstValueFrom } from 'rxjs';
-import { of } from 'rxjs';
+import {
+  BehaviorSubject, 
+  filter, 
+  firstValueFrom,
+} from 'rxjs';
 
 import { routes } from './app.routes';
 
 describe('Application routing', () => {
+  const authenticationState = new BehaviorSubject({
+    isAuthenticated: true,
+  });
+
+  const authServiceMock = {
+    isAuthenticated$: authenticationState.asObservable(),
+    login: vi.fn(),
+    logout: vi.fn(),
+    consumeReturnUrl: vi.fn().mockReturnValue('/dashboard'),
+  };
+
   beforeEach(() => {
+    vi.clearAllMocks();
+
+    authenticationState.next({ isAuthenticated: true });
+
     TestBed.configureTestingModule({
       providers: [
         provideRouter(routes),
         {
-            provide: AuthService,
-            useValue: {
-                isAuthenticated$: of({ isAuthenticated: true }),
-                login: vi.fn(),
-                logout: vi.fn(),
-            },
+          provide: AuthService,
+          useValue: authServiceMock,
         },
       ],
     });
@@ -98,4 +112,108 @@ describe('Application routing', () => {
     expect(harness.routeNativeElement?.textContent)
       .toContain('Patients');
   }, 20000);
+
+  it.each([
+    '/dashboard',
+    '/patients',
+    '/doctors',
+    '/appointments',
+  ])('blocks unauthenticated navigation to %s', async (path) => {
+    authenticationState.next({ isAuthenticated: false });
+
+    const router = TestBed.inject(Router);
+
+    const result = await router.navigateByUrl(path);
+
+    expect(result).toBe(false);
+
+    expect(authServiceMock.login)
+      .toHaveBeenCalledOnce();
+
+    expect(authServiceMock.login)
+      .toHaveBeenCalledWith(path);
+  });
+
+  it('preserves query parameters for unauthenticated deep links', async () => {
+    authenticationState.next({ isAuthenticated: false });
+
+    const router = TestBed.inject(Router);
+
+    const result = await router.navigateByUrl(
+      '/patients?tab=active&sort=name',
+    );
+
+    expect(result).toBe(false);
+
+    expect(authServiceMock.login).toHaveBeenCalledWith(
+      '/patients?tab=active&sort=name',
+    );
+  });
+
+  it('allows unauthenticated access to the callback route', async () => {
+    authenticationState.next({ isAuthenticated: false });
+
+    const harness = await RouterTestingHarness.create();
+
+    await harness.navigateByUrl('/auth/callback');
+
+    expect(harness.routeNativeElement?.textContent)
+      .toContain('Completing sign-in...');
+
+    expect(authServiceMock.login).not.toHaveBeenCalled();
+  });
+
+  it('does not invoke login for the public completion route', async () => {
+    authenticationState.next({ isAuthenticated: false });
+
+    const router = TestBed.inject(Router);
+
+    await router.navigateByUrl('/auth/complete');
+
+    expect(authServiceMock.login).not.toHaveBeenCalled();
+  });
+
+  it('keeps authentication routes outside the protected layout', () => {
+    const layoutRoute = routes.find(
+      (route) => route.path === '' && route.children,
+    );
+
+    const callbackRoute = routes.find(
+      (route) => route.path === 'auth/callback',
+    );
+
+    const completeRoute = routes.find(
+      (route) => route.path === 'auth/complete',
+    );
+
+    expect(layoutRoute?.canActivateChild).toBeDefined();
+
+    expect(callbackRoute?.canActivate).toBeUndefined();
+    expect(callbackRoute?.canActivateChild).toBeUndefined();
+
+    expect(completeRoute?.canActivate).toBeUndefined();
+    expect(completeRoute?.canActivateChild).toBeUndefined();
+
+    expect(
+      layoutRoute?.children?.some(
+        (route) =>
+          route.path === 'auth/callback' ||
+          route.path === 'auth/complete',
+      ),
+    ).toBe(false);
+  });
+  
+  it('displays Not Found without requiring authentication', async () => {
+    authenticationState.next({ isAuthenticated: false });
+
+    const harness = await RouterTestingHarness.create();
+
+    await harness.navigateByUrl('/unknown-page');
+
+    expect(harness.routeNativeElement?.textContent)
+      .toContain('Page not found');
+
+    expect(authServiceMock.login)
+      .not.toHaveBeenCalled();
+  });
 });
