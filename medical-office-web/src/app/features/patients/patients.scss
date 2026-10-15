@@ -147,3 +147,48 @@ tbody tr:hover {
   }
 }
 
+
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.delete-button {
+  padding: 6px 10px;
+  background: transparent;
+  color: #f28b82;
+  border: 1px solid transparent;
+  border-radius: 6px;
+
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: rgb(242 139 130 / 10%);
+    border-color: rgb(242 139 130 / 30%);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #f28b82;
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.delete-error {
+  margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+  .row-actions {
+    gap: 10px;
+  }
+}
+
+

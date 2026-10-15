@@ -175,4 +175,40 @@ describe('ConfirmDialog', () => {
 
     expect(button?.hasAttribute('autofocus')).toBe(true);
   });
+
+  
+  it('should disable actions while processing', () => {
+    fixture.componentRef.setInput('isProcessing', true);
+    fixture.detectChanges();
+
+    const cancelButton = fixture.nativeElement.querySelector(
+      '.cancel-button',
+    ) as HTMLButtonElement;
+
+    const confirmButton = fixture.nativeElement.querySelector(
+      '.confirm-button',
+    ) as HTMLButtonElement;
+
+    expect(cancelButton.disabled).toBe(true);
+    expect(confirmButton.disabled).toBe(true);
+    expect(confirmButton.textContent).toContain('Processing...');
+  });
+
+  it('should not emit confirmation or cancellation while processing', () => {
+    fixture.componentRef.setInput('isProcessing', true);
+    fixture.detectChanges();
+
+    const confirmSpy = vi.fn();
+    const cancelSpy = vi.fn();
+
+    fixture.componentInstance.confirm.subscribe(confirmSpy);
+    fixture.componentInstance.cancelled.subscribe(cancelSpy);
+
+    fixture.componentInstance.onConfirm();
+    fixture.componentInstance.onCancel();
+
+    expect(confirmSpy).not.toHaveBeenCalled();
+    expect(cancelSpy).not.toHaveBeenCalled();
+  });
+
 });
