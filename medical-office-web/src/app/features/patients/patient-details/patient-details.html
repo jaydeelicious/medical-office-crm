@@ -1,0 +1,56 @@
+
+<section class="patient-details-page">
+  <a class="back-link" routerLink="/patients">
+    ← Back to patients
+  </a>
+
+  <header class="page-heading">
+    <h1>Patient details</h1>
+    <p>View patient information.</p>
+  </header>
+
+  @if (isLoading()) {
+    <app-loading-indicator
+      message="Loading patient details..."
+    />
+  } @else if (errorMessage(); as message) {
+    <app-error-message
+      [message]="message"
+      [retryable]="canRetry()"
+      (retry)="loadPatient()"
+    />
+  } @else if (patient(); as patient) {
+    <div class="details-card">
+      <h2>
+        {{ patient.firstName }} {{ patient.lastName }}
+      </h2>
+
+      <dl class="patient-fields">
+        <div class="field">
+          <dt>First name</dt>
+          <dd>{{ patient.firstName }}</dd>
+        </div>
+
+        <div class="field">
+          <dt>Last name</dt>
+          <dd>{{ patient.lastName }}</dd>
+        </div>
+
+        <div class="field">
+          <dt>Email</dt>
+          <dd>{{ patient.email ?? '—' }}</dd>
+        </div>
+
+        <div class="field">
+          <dt>Phone</dt>
+          <dd>{{ patient.phone ?? '—' }}</dd>
+        </div>
+
+        <div class="field">
+          <dt>Date of birth</dt>
+          <dd>{{ patient.dateOfBirth ?? '—' }}</dd>
+        </div>
+      </dl>
+    </div>
+  }
+</section>
