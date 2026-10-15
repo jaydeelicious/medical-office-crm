@@ -1,8 +1,8 @@
 
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { OidcSecurityService } from 'angular-auth-oidc-client';
-import { BehaviorSubject, of } from 'rxjs';
+import { AuthService } from '../../core/auth/auth.service';
+import { BehaviorSubject } from 'rxjs';
 
 import { AppLayout } from './app-layout';
 
@@ -11,9 +11,9 @@ describe('AppLayout authentication controls', () => {
     isAuthenticated: false,
   });
 
-  const oidcSecurityServiceMock = {
-    authorize: vi.fn(),
-    logoff: vi.fn().mockReturnValue(of({})),
+  const authServiceMock = {
+    login: vi.fn(),
+    logout: vi.fn(),
     isAuthenticated$: authenticationState.asObservable(),
   };
 
@@ -26,8 +26,8 @@ describe('AppLayout authentication controls', () => {
       providers: [
         provideRouter([]),
         {
-          provide: OidcSecurityService,
-          useValue: oidcSecurityServiceMock,
+          provide: AuthService,
+          useValue: authServiceMock,
         },
       ],
     }).compileComponents();
@@ -73,7 +73,7 @@ describe('AppLayout authentication controls', () => {
 
     loginButton.click();
 
-    expect(oidcSecurityServiceMock.authorize)
+    expect(authServiceMock.login)
       .toHaveBeenCalledOnce();
   });
 
@@ -91,7 +91,7 @@ describe('AppLayout authentication controls', () => {
 
     logoutButton.click();
 
-    expect(oidcSecurityServiceMock.logoff)
+    expect(authServiceMock.logout)
       .toHaveBeenCalledOnce();
   });
 });
