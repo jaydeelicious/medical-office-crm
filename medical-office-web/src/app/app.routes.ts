@@ -30,6 +30,20 @@ export const routes: Routes = [
                     ),
             },
             {
+                path: 'patients/new',
+                loadComponent: () =>
+                    import('./features/patients/patient-form/patient-form').then(
+                        (m) => m.PatientForm
+                    ),
+            },
+            {
+                path: 'patients/:id/edit',
+                loadComponent: () =>
+                    import('./features/patients/patient-form/patient-form').then(
+                        (m) => m.PatientForm
+                    ),
+            },
+            {
                 path: 'patients/:id',
                 loadComponent: () =>
                     import('./features/patients/patient-details/patient-details').then(
