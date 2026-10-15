@@ -4,6 +4,8 @@ import { BehaviorSubject, firstValueFrom, of, take } from 'rxjs';
 
 import { AuthService } from './auth.service';
 
+import { throwError } from 'rxjs';
+
 describe('AuthService', () => {
   const authenticationState = new BehaviorSubject({
     isAuthenticated: false,
@@ -23,6 +25,14 @@ describe('AuthService', () => {
 
     authenticationState.next({ isAuthenticated: false });
     vi.clearAllMocks();
+
+    oidcSecurityServiceMock.getAccessToken.mockReturnValue(
+      of('test-access-token'),
+    );
+
+    oidcSecurityServiceMock.logoff.mockReturnValue(
+      of({}),
+    );
 
     TestBed.configureTestingModule({
       providers: [
@@ -133,5 +143,88 @@ describe('AuthService', () => {
 
     expect(oidcSecurityServiceMock.getAccessToken)
       .toHaveBeenCalledOnce();
-  })
+  });
+
+  it('emits authentication state changes to subscribers', () => {
+    const receivedStates: boolean[] = [];
+
+    const subscription = service.isAuthenticated$.subscribe(
+      ({ isAuthenticated }) => {
+        receivedStates.push(isAuthenticated);
+      },
+    );
+
+    authenticationState.next({ isAuthenticated: true });
+    authenticationState.next({ isAuthenticated: false });
+
+    expect(receivedStates).toEqual([
+      false,
+      true,
+      false,
+    ]);
+
+    subscription.unsubscribe();
+  });
+
+  it('clears a previous return URL when login has no destination', () => {
+    service.login('/patients');
+
+    service.login();
+
+    expect(service.consumeReturnUrl())
+      .toBe('/dashboard');
+
+    expect(oidcSecurityServiceMock.authorize)
+      .toHaveBeenCalledTimes(2);
+  });
+
+  it('clears a previous return URL when a new destination is unsafe', () => {
+    service.login('/patients');
+
+    service.login('https://evil.example');
+
+    expect(service.consumeReturnUrl())
+      .toBe('/dashboard');
+  });
+
+  it.each([
+    '/patients\nexample',
+    '/patients\r\nexample',
+    '/patients\texample',
+    '/patients\u0000example',
+    '/patients\u007Fexample',
+  ])('rejects return URLs containing control characters', (url) => {
+    service.login(url);
+
+    expect(service.consumeReturnUrl())
+      .toBe('/dashboard');
+  });
+
+  it('does not invoke logout until requested', () => {
+    expect(oidcSecurityServiceMock.logoff)
+      .not.toHaveBeenCalled();
+
+    service.logout();
+
+    expect(oidcSecurityServiceMock.logoff)
+      .toHaveBeenCalledOnce();
+  });
+
+  it('returns an empty access token when none is available', async () => {
+    oidcSecurityServiceMock.getAccessToken
+      .mockReturnValueOnce(of(''));
+
+    const token = await firstValueFrom(
+      service.getAccessToken(),
+    );
+
+    expect(token).toBe('');
+  });
+
+  it('preserves fragments for approved application routes', () => {
+    service.login('/appointments#calendar');
+
+    expect(service.consumeReturnUrl())
+      .toBe('/appointments#calendar');
+  });
 });
