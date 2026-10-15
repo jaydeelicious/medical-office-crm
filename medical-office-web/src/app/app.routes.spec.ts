@@ -116,7 +116,13 @@ describe('Application routing', () => {
   it.each([
     '/dashboard',
     '/patients',
+    '/patients/new',
+    '/patients/8d98f074-b491-4e62-8519-d1f197c1a12e',
+    '/patients/8d98f074-b491-4e62-8519-d1f197c1a12e/edit',
     '/doctors',
+    '/doctors/new',
+    '/doctors/8d98f074-b491-4e62-8519-d1f197c1a12e',
+    '/doctors/8d98f074-b491-4e62-8519-d1f197c1a12e/edit',
     '/appointments',
   ])('blocks unauthenticated navigation to %s', async (path) => {
     authenticationState.next({ isAuthenticated: false });
@@ -215,5 +221,17 @@ describe('Application routing', () => {
 
     expect(authServiceMock.login)
       .not.toHaveBeenCalled();
+  });
+
+  it('preserves the full doctor edit URL when authentication is required', async () => {
+    authenticationState.next({ isAuthenticated: false });
+
+    const router = TestBed.inject(Router);
+    const url = '/doctors/8d98f074-b491-4e62-8519-d1f197c1a12e/edit?source=dashboard';
+
+    const result = await router.navigateByUrl(url);
+
+    expect(result).toBe(false);
+    expect(authServiceMock.login).toHaveBeenCalledWith(url);
   });
 });
