@@ -4,8 +4,6 @@ import { BehaviorSubject, firstValueFrom, of, take } from 'rxjs';
 
 import { AuthService } from './auth.service';
 
-import { throwError } from 'rxjs';
-
 describe('AuthService', () => {
   const authenticationState = new BehaviorSubject({
     isAuthenticated: false,
