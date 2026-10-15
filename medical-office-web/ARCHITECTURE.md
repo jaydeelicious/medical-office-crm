@@ -83,6 +83,36 @@ npm run lint
 npm test -- --watch=false
 ```
 
+### Frontend Testing Conventions
+
+The frontend uses Angular's `TestBed` with Vitest for unit and component testing.
+
+Tests are colocated with their implementation files using the `.spec.ts` suffix.
+
+Testing guidelines:
+
+- **Components:** Test observable behavior, including rendered content, inputs, outputs, and user interactions.
+- **Signal inputs:** Use `fixture.componentRef.setInput()` to update component inputs in tests.
+- **Content projection:** Use a host component when testing projected content and interactions with the parent.
+- **HTTP services:** Use `provideHttpClient()` and `provideHttpClientTesting()` with `HttpTestingController` to verify requests, responses, and error handling.
+- **Routing:** Use Angular's router testing utilities to verify navigation, redirects, and route guards.
+- **Authentication:** Mock OIDC dependencies and verify application behavior without contacting a real authentication server.
+- **Mocking:** Use Vitest mocks when isolating external dependencies or observing interactions.
+- **Accessibility:** Verify relevant semantic HTML, accessible names, and ARIA attributes. Use real-browser testing for behavior that jsdom cannot simulate reliably.
+- **Test isolation:** Avoid shared mutable state between tests. Reset mocks and verify outstanding HTTP requests where appropriate.
+
+Tests should remain focused, deterministic, and independent of external services.
+
+Run the following checks before committing or opening a pull request:
+
+```bash
+npm test -- --watch=false
+npm run lint
+npm run build
+```
+
+New frontend features should include focused tests for their relevant behavior.
+
 ## Architectural Principles
 
 The application favors simple, feature-oriented organization and Angular's built-in capabilities.
