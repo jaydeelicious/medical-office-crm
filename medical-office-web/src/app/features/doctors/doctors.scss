@@ -148,3 +148,36 @@ tbody tr:hover {
     }
   }
 }
+
+
+.delete-error {
+  margin-bottom: 20px;
+}
+
+.delete-button {
+  padding: 6px 0;
+  border: none;
+  background: transparent;
+  color: #f28b82;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:not(:disabled):hover {
+    color: #ffb4ab;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #f28b82;
+    outline-offset: 4px;
+    border-radius: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
