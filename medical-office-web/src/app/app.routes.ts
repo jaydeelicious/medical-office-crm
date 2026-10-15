@@ -58,6 +58,20 @@ export const routes: Routes = [
                     ),
             },
             {
+                path: 'doctors/new',
+                loadComponent: () =>
+                    import('./features/doctors/doctor-form/doctor-form').then(
+                        (m) => m.DoctorForm
+                    ),
+            },
+            {
+                path: 'doctors/:id/edit',
+                loadComponent: () =>
+                    import('./features/doctors/doctor-form/doctor-form').then(
+                        (m) => m.DoctorForm
+                    ),
+            },
+            {
                 path: 'doctors/:id',
                 loadComponent: () =>
                     import('./features/doctors/doctor-details/doctor-details').then(
