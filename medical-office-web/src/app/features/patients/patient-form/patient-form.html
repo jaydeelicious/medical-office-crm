@@ -1,0 +1,117 @@
+<section class="patient-form-page">
+    <header class="page-heading">
+        <h1>{{ isEditMode() ? 'Edit patient' : 'New patient' }}</h1>
+        <p>
+            {{ isEditMode()
+            ? 'Update patient information.'
+            : 'Enter the information for a new patient.' }}
+        </p>
+    </header>
+
+    @if (isLoading()) {
+    <app-loading-indicator message="Loading patient..." />
+    } @else {
+    @if (errorMessage(); as message) {
+    <app-error-message [message]="message" />
+    }
+
+    @if (!isEditMode() || isPatientLoaded()) {
+    @if (validationErrors().length > 0) {
+    <div class="validation-summary" role="alert">
+        <p>Please review the following errors:</p>
+        <ul>
+            @for (error of validationErrors(); track $index) {
+            <li>{{ error }}</li>
+            }
+        </ul>
+    </div>
+    }
+
+    <form class="form-card" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+        <div class="form-grid">
+            <div class="form-field">
+                <label for="firstName">First name *</label>
+                <input id="firstName" type="text" formControlName="firstName" maxlength="100"
+                    [attr.aria-invalid]="firstName.invalid && firstName.touched" />
+
+                @if (firstName.invalid && firstName.touched) {
+                <p class="field-error">
+                    @if (firstName.hasError('required') ||
+                    firstName.hasError('pattern')) {
+                    First name is required.
+                    } @else if (firstName.hasError('maxlength')) {
+                    First name must not exceed 100 characters.
+                    }
+                </p>
+                }
+            </div>
+
+            <div class="form-field">
+                <label for="lastName">Last name *</label>
+                <input id="lastName" type="text" formControlName="lastName" maxlength="100"
+                    [attr.aria-invalid]="lastName.invalid && lastName.touched" />
+
+                @if (lastName.invalid && lastName.touched) {
+                <p class="field-error">
+                    @if (lastName.hasError('required') ||
+                    lastName.hasError('pattern')) {
+                    Last name is required.
+                    } @else if (lastName.hasError('maxlength')) {
+                    Last name must not exceed 100 characters.
+                    }
+                </p>
+                }
+            </div>
+
+            <div class="form-field">
+                <label for="email">Email</label>
+                <input id="email" type="email" formControlName="email" maxlength="200"
+                    [attr.aria-invalid]="email.invalid && email.touched" />
+
+                @if (email.invalid && email.touched) {
+                <p class="field-error">
+                    @if (email.hasError('email')) {
+                    Enter a valid email address.
+                    } @else if (email.hasError('maxlength')) {
+                    Email must not exceed 200 characters.
+                    }
+                </p>
+                }
+            </div>
+
+            <div class="form-field">
+                <label for="phone">Phone</label>
+                <input id="phone" type="tel" formControlName="phone" maxlength="30"
+                    [attr.aria-invalid]="phone.invalid && phone.touched" />
+
+                @if (phone.invalid && phone.touched) {
+                <p class="field-error">
+                    Phone must not exceed 30 characters.
+                </p>
+                }
+            </div>
+
+            <div class="form-field">
+                <label for="dateOfBirth">Date of birth</label>
+                <input id="dateOfBirth" type="date" formControlName="dateOfBirth" />
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="button" class="cancel-button" [disabled]="isSubmitting() || form.invalid || (isEditMode() && !isPatientLoaded())" (click)="cancel()">
+                Cancel
+            </button>
+
+            <button type="submit" class="submit-button" [disabled]="isSubmitting() || form.invalid || (isEditMode() && !isPatientLoaded())">
+                @if (isSubmitting()) {
+                Saving...
+                } @else {
+                {{ isEditMode() ? 'Save changes' : 'Create patient' }}
+                }
+            </button>
+        </div>
+    </form>
+    }
+
+    }
+</section>

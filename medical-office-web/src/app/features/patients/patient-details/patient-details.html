@@ -20,6 +20,14 @@
       (retry)="loadPatient()"
     />
   } @else if (patient(); as patient) {
+    <div class="page-actions">
+        <a
+            class="edit-button"
+            [routerLink]="['/patients', patient.id, 'edit']"
+        >
+            Edit patient
+        </a>
+    </div>
     <div class="details-card">
       <h2>
         {{ patient.firstName }} {{ patient.lastName }}
