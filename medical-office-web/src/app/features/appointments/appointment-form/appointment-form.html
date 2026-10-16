@@ -1,0 +1,124 @@
+<section class="appointment-form-page">
+    <header class="page-heading">
+        <h1>New appointment</h1>
+        <p>Schedule an appointment for a patient.</p>
+    </header>
+
+
+    @if (isLoading()) {
+    <app-loading-indicator message="Loading patients and doctors..." />
+    } @else if (errorMessage(); as message) {
+    <app-error-message [message]="message" [retryable]="canRetry()" (retry)="loadOptions()" />
+    } @else {
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+        <div class="form-field">
+            <label for="patientId">Patient</label>
+
+            <select id="patientId" formControlName="patientId">
+                <option value="">Select a patient</option>
+
+                @for (patient of patients(); track patient.id) {
+                <option [value]="patient.id">
+                    {{ patient.firstName }} {{ patient.lastName }}
+                </option>
+                }
+            </select>
+
+            @if (patientId.touched && patientId.hasError('required')) {
+            <p class="field-error">Please select a patient.</p>
+            }
+        </div>
+
+        <div class="form-field">
+            <label for="doctorId">Doctor</label>
+
+            <select id="doctorId" formControlName="doctorId">
+                <option value="">Select a doctor</option>
+
+                @for (doctor of doctors(); track doctor.id) {
+                <option [value]="doctor.id">
+                    Dr. {{ doctor.firstName }} {{ doctor.lastName }}
+                </option>
+                }
+            </select>
+
+            @if (doctorId.touched && doctorId.hasError('required')) {
+            <p class="field-error">Please select a doctor.</p>
+            }
+        </div>
+
+        <div class="form-field">
+            <label for="date">Date</label>
+            <input id="date" type="date" formControlName="date" />
+
+            @if (date.touched && date.hasError('required')) {
+            <p class="field-error">Please select a date.</p>
+            }
+        </div>
+
+        <div class="time-fields">
+            <div class="form-field">
+                <label for="startTime">Start time</label>
+                <input id="startTime" type="time" formControlName="startTime" />
+
+                @if (startTime.touched && startTime.hasError('required')) {
+                <p class="field-error">Please select a start time.</p>
+                }
+            </div>
+
+            <div class="form-field">
+                <label for="endTime">End time</label>
+                <input id="endTime" type="time" formControlName="endTime" />
+
+                @if (endTime.touched && endTime.hasError('required')) {
+                <p class="field-error">Please select an end time.</p>
+                }
+            </div>
+        </div>
+
+        @if (form.touched && form.hasError('invalidTimeRange')) {
+        <p class="field-error">
+            End time must be later than start time.
+        </p>
+        }
+
+        <div class="form-field">
+            <label for="notes">Notes (optional)</label>
+            <textarea id="notes" rows="4" formControlName="notes"></textarea>
+
+            @if (notes.touched && notes.hasError('maxlength')) {
+            <p class="field-error">
+                Notes cannot exceed 1000 characters.
+            </p>
+            }
+        </div>
+
+        @if (submitError(); as message) {
+        <app-error-message [message]="message" />
+        }
+
+        @if (validationErrors().length > 0) {
+        <div class="validation-summary" role="alert">
+            <ul>
+                @for (message of validationErrors(); track $index) {
+                <li>{{ message }}</li>
+                }
+            </ul>
+        </div>
+        }
+
+        <div class="form-actions">
+            <button type="button" class="cancel-button" [disabled]="isSubmitting()" (click)="cancel()">
+                Cancel
+            </button>
+
+            <button type="submit" class="submit-button"
+                [disabled]="isSubmitting() || isLoading() || patients().length === 0 || doctors().length === 0">
+                {{ isSubmitting() ? 'Scheduling...' : 'Schedule appointment' }}
+            </button>
+        </div>
+
+    </form>
+    }
+
+</section>

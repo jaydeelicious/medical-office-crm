@@ -1,11 +1,17 @@
 
 <section class="appointments-page">
-  <header class="page-heading">
-    <div>
-      <h1>Appointments</h1>
-      <p>View and manage scheduled appointments.</p>
-    </div>
-  </header>
+  
+<header class="page-heading">
+  <div>
+    <h1>Appointments</h1>
+    <p>View and manage scheduled appointments.</p>
+  </div>
+
+  <a class="primary-button" routerLink="/appointments/new">
+    New appointment
+  </a>
+</header>
+
 
   @if (isLoading()) {
     <app-loading-indicator

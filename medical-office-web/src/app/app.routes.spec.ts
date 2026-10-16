@@ -234,4 +234,27 @@ describe('Application routing', () => {
     expect(result).toBe(false);
     expect(authServiceMock.login).toHaveBeenCalledWith(url);
   });
+
+  it('registers the new appointment route before the details route', () => {
+        const layoutRoute = routes.find(
+            (route) => route.path === '' && route.children,
+        );
+
+        const children = layoutRoute?.children ?? [];
+
+        const newAppointmentIndex = children.findIndex(
+            (route) => route.path === 'appointments/new',
+        );
+
+        const appointmentDetailsIndex = children.findIndex(
+            (route) => route.path === 'appointments/:id',
+        );
+
+        expect(newAppointmentIndex).toBeGreaterThanOrEqual(0);
+        expect(appointmentDetailsIndex).toBeGreaterThanOrEqual(0);
+
+        expect(newAppointmentIndex).toBeLessThan(
+            appointmentDetailsIndex,
+        );
+    });
 });
