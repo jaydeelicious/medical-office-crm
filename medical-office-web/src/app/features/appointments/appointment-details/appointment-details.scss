@@ -1,0 +1,97 @@
+
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.appointment-details-page {
+  width: 100%;
+  max-width: 900px;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 24px;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  text-decoration: none;
+
+  &:hover {
+    color: var(--color-text);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-text);
+    outline-offset: 4px;
+  }
+}
+
+.page-heading {
+  margin-bottom: 28px;
+
+  h1 {
+    margin: 0 0 8px;
+    font-size: 1.75rem;
+    font-weight: 650;
+  }
+
+  p {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+  }
+}
+
+.details-card {
+  padding: 28px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+
+  h2 {
+    margin: 0 0 24px;
+    font-size: 1.125rem;
+  }
+}
+
+.appointment-fields {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.field {
+  min-width: 0;
+
+  dt {
+    margin-bottom: 8px;
+    color: var(--color-text-muted);
+    font-size: 0.8125rem;
+  }
+
+  dd {
+    margin: 0;
+    color: var(--color-text);
+    font-size: 0.9375rem;
+    overflow-wrap: anywhere;
+  }
+}
+
+.notes {
+  white-space: pre-wrap;
+}
+
+@media (max-width: 600px) {
+  .details-card {
+    padding: 20px;
+  }
+
+  .appointment-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .page-heading h1 {
+    font-size: 1.5rem;
+  }
+}
