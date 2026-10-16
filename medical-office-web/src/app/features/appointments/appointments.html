@@ -1,4 +1,85 @@
-<section>
-  <h1>Appointments</h1>
-  <p>Appointment management features are coming soon.</p>
+
+<section class="appointments-page">
+  <header class="page-heading">
+    <div>
+      <h1>Appointments</h1>
+      <p>View and manage scheduled appointments.</p>
+    </div>
+  </header>
+
+  @if (isLoading()) {
+    <app-loading-indicator
+      message="Loading appointments..."
+    />
+  } @else if (errorMessage(); as message) {
+    <app-error-message
+      [message]="message"
+      [retryable]="canRetry()"
+      (retry)="loadAppointments()"
+    />
+  } @else if (appointments().length === 0) {
+    <app-empty-state
+      title="No appointments found"
+      description="There are no appointments to display."
+    />
+  } @else {
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Date & Time</th>
+            <th scope="col">Patient</th>
+            <th scope="col">Doctor</th>
+            <th scope="col">Status</th>
+            <th scope="col">Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          @for (appointment of appointments(); track appointment.id) {
+            <tr>
+              <td>
+                <div class="appointment-date">
+                  {{ appointment.startTime | date:'mediumDate' }}
+                </div>
+
+                <div class="appointment-time">
+                  {{ appointment.startTime | date:'shortTime' }}
+                  –
+                  {{ appointment.endTime | date:'shortTime' }}
+                </div>
+              </td>
+
+              <td class="person-name">
+                {{ getPatientName(appointment.patientId) }}
+              </td>
+
+              <td>
+                {{ getDoctorName(appointment.doctorId) }}
+              </td>
+
+              <td>
+                <span
+                  class="status-badge"
+                  [class]="getStatusClass(appointment.status)"
+                >
+                  {{ getStatusLabel(appointment.status) }}
+                </span>
+              </td>
+
+              <td>
+                <a
+                  class="details-link"
+                  [routerLink]="['/appointments', appointment.id]"
+                  [attr.aria-label]="'View appointment details'"
+                >
+                  View details
+                </a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
 </section>
