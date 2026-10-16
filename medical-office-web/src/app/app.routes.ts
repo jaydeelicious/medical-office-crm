@@ -86,6 +86,12 @@ export const routes: Routes = [
                     ),
             },
             {
+                path: 'appointments/new',
+                loadComponent: () =>
+                    import('./features/appointments/appointment-form/appointment-form')
+                        .then((m) => m.AppointmentForm),
+            },
+            {
                 path: 'appointments/:id',
                 loadComponent: () =>
                     import('./features/appointments/appointment-details/appointment-details')
