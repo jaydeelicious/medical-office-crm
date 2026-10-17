@@ -124,6 +124,7 @@ describe('Application routing', () => {
     '/doctors/8d98f074-b491-4e62-8519-d1f197c1a12e',
     '/doctors/8d98f074-b491-4e62-8519-d1f197c1a12e/edit',
     '/appointments',
+    '/appointments/8d98f074-b491-4e62-8519-d1f197c1a12e/reschedule',
   ])('blocks unauthenticated navigation to %s', async (path) => {
     authenticationState.next({ isAuthenticated: false });
 
@@ -257,4 +258,27 @@ describe('Application routing', () => {
             appointmentDetailsIndex,
         );
     });
+
+    
+  it('registers the appointment rescheduling route', () => {
+    const layoutRoute = routes.find(
+      (route) => route.path === '' && route.children,
+    );
+
+    const children = layoutRoute?.children ?? [];
+
+    const rescheduleIndex = children.findIndex(
+      (route) => route.path === 'appointments/:id/reschedule',
+    );
+
+    const detailsIndex = children.findIndex(
+      (route) => route.path === 'appointments/:id',
+    );
+
+    expect(rescheduleIndex).toBeGreaterThanOrEqual(0);
+    expect(detailsIndex).toBeGreaterThanOrEqual(0);
+
+    expect(rescheduleIndex).toBeLessThan(detailsIndex);
+  });
+
 });

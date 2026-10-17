@@ -1,0 +1,97 @@
+<section class="appointment-reschedule-page">
+    <a class="back-link" routerLink="/appointments">
+        ← Back to appointments
+    </a>
+
+    <header class="page-heading">
+        <h1>Reschedule appointment</h1>
+        <p>Change the date and time of an existing appointment.</p>
+    </header>
+
+    @if (isLoading()) {
+    <app-loading-indicator message="Loading appointment..." />
+    } @else if (errorMessage(); as message) {
+    <app-error-message [message]="message" [retryable]="canRetry()" (retry)="loadAppointment()" />
+    } @else if (appointment(); as appointment) {
+    <div class="current-appointment">
+        <h2>Current appointment</h2>
+
+        <p>
+            {{ appointment.startTime | date:'mediumDate' }}
+            ·
+            {{ appointment.startTime | date:'shortTime' }}
+            –
+            {{ appointment.endTime | date:'shortTime' }}
+        </p>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+        <div class="form-field">
+            <label for="date">New date</label>
+
+            <input id="date" type="date" formControlName="date" />
+
+            @if (date.touched && date.hasError('required')) {
+            <p class="field-error">Please select a date.</p>
+            }
+        </div>
+
+        <div class="time-fields">
+            <div class="form-field">
+                <label for="startTime">Start time</label>
+
+                <input id="startTime" type="time" formControlName="startTime" />
+
+                @if (startTime.touched && startTime.hasError('required')) {
+                <p class="field-error">
+                    Please select a start time.
+                </p>
+                }
+            </div>
+
+            <div class="form-field">
+                <label for="endTime">End time</label>
+
+                <input id="endTime" type="time" formControlName="endTime" />
+
+                @if (endTime.touched && endTime.hasError('required')) {
+                <p class="field-error">
+                    Please select an end time.
+                </p>
+                }
+            </div>
+        </div>
+
+        @if (form.touched && form.hasError('invalidTimeRange')) {
+        <p class="field-error">
+            End time must be later than start time.
+        </p>
+        }
+
+        @if (submitError(); as message) {
+        <app-error-message [message]="message" />
+        }
+
+        @if (validationErrors().length > 0) {
+        <div class="validation-summary" role="alert">
+            <ul>
+                @for (message of validationErrors(); track $index) {
+                <li>{{ message }}</li>
+                }
+            </ul>
+        </div>
+        }
+
+        <div class="form-actions">
+            <button type="button" class="cancel-button" [disabled]="isSubmitting()" (click)="cancel()">
+                Cancel
+            </button>
+
+            <button type="submit" class="submit-button" [disabled]="isSubmitting() || isLoading() || form.invalid">
+                {{ isSubmitting() ? 'Saving...' : 'Save new time' }}
+            </button>
+        </div>
+
+    </form>
+    }
+</section>

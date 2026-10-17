@@ -92,6 +92,12 @@ export const routes: Routes = [
                         .then((m) => m.AppointmentForm),
             },
             {
+                path: 'appointments/:id/reschedule',
+                loadComponent: () =>
+                    import('./features/appointments/appointment-reschedule/appointment-reschedule')
+                        .then((m) => m.AppointmentReschedule),
+            },
+            {
                 path: 'appointments/:id',
                 loadComponent: () =>
                     import('./features/appointments/appointment-details/appointment-details')
