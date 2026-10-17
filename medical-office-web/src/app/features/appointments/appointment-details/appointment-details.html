@@ -1,72 +1,76 @@
-
 <section class="appointment-details-page">
-  <a class="back-link" routerLink="/appointments">
-    ← Back to appointments
-  </a>
+    <a class="back-link" routerLink="/appointments">
+        ← Back to appointments
+    </a>
 
-  <header class="page-heading">
-    <h1>Appointment details</h1>
-    <p>View appointment information.</p>
-  </header>
+    <header class="page-heading">
+        <h1>Appointment details</h1>
+        <p>View appointment information.</p>
+    </header>
 
-  @if (isLoading()) {
-    <app-loading-indicator
-      message="Loading appointment details..."
-    />
-  } @else if (errorMessage(); as message) {
-    <app-error-message
-      [message]="message"
-      [retryable]="canRetry()"
-      (retry)="loadAppointment()"
-    />
-  } @else if (appointment(); as appointment) {
-    <div class="details-card">
-      <h2>Appointment information</h2>
+    @if (isLoading()) {
+    <app-loading-indicator message="Loading appointment details..." />
+    } @else if (errorMessage(); as message) {
+    <app-error-message [message]="message" [retryable]="canRetry()" (retry)="loadAppointment()" />
+    } @else if (appointment(); as appointment) {
 
-      <dl class="appointment-fields">
-        <div class="field">
-          <dt>Patient</dt>
-          <dd>{{ patientName() }}</dd>
-        </div>
-
-        <div class="field">
-          <dt>Doctor</dt>
-          <dd>{{ doctorName() }}</dd>
-        </div>
-
-        <div class="field">
-          <dt>Date</dt>
-          <dd>
-            {{ appointment.startTime | date:'fullDate' }}
-          </dd>
-        </div>
-
-        <div class="field">
-          <dt>Start time</dt>
-          <dd>
-            {{ appointment.startTime | date:'shortTime' }}
-          </dd>
-        </div>
-
-        <div class="field">
-          <dt>End time</dt>
-          <dd>
-            {{ appointment.endTime | date:'shortTime' }}
-          </dd>
-        </div>
-
-        <div class="field">
-          <dt>Status</dt>
-          <dd>{{ getStatusLabel(appointment.status) }}</dd>
-        </div>
-
-        <div class="field">
-          <dt>Notes</dt>
-          <dd class="notes">
-            {{ appointment.notes ?? '—' }}
-          </dd>
-        </div>
-      </dl>
+    <div class="details-actions">
+        <a class="reschedule-button" [routerLink]="[
+      '/appointments',
+      appointment.id,
+      'reschedule'
+    ]">
+            Reschedule appointment
+        </a>
     </div>
-  }
+
+    <div class="details-card">
+        <h2>Appointment information</h2>
+
+        <dl class="appointment-fields">
+            <div class="field">
+                <dt>Patient</dt>
+                <dd>{{ patientName() }}</dd>
+            </div>
+
+            <div class="field">
+                <dt>Doctor</dt>
+                <dd>{{ doctorName() }}</dd>
+            </div>
+
+            <div class="field">
+                <dt>Date</dt>
+                <dd>
+                    {{ appointment.startTime | date:'fullDate' }}
+                </dd>
+            </div>
+
+            <div class="field">
+                <dt>Start time</dt>
+                <dd>
+                    {{ appointment.startTime | date:'shortTime' }}
+                </dd>
+            </div>
+
+            <div class="field">
+                <dt>End time</dt>
+                <dd>
+                    {{ appointment.endTime | date:'shortTime' }}
+                </dd>
+            </div>
+
+            <div class="field">
+                <dt>Status</dt>
+                <dd>{{ getStatusLabel(appointment.status) }}</dd>
+            </div>
+
+            <div class="field">
+                <dt>Notes</dt>
+                <dd class="notes">
+                    {{ appointment.notes ?? '—' }}
+                </dd>
+            </div>
+        </dl>
+    </div>
+    }
 </section>

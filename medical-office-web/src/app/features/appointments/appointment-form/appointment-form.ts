@@ -23,32 +23,16 @@ import { DoctorService } from '../../doctors/doctor.service';
 import { AppointmentService } from '../appointment.service';
 import { CreateAppointmentRequest } from '../appointment.model';
 
+import { appointmentTimeValidator } from '../validators/appointment-time.validator';
+
 import { LoadingIndicator } from '../../../shared/components/loading-indicator/loading-indicator';
 import { ErrorMessage } from '../../../shared/components/error-message/error-message';
 
 import {
-    AbstractControl,
     FormBuilder,
     ReactiveFormsModule,
-    ValidationErrors,
     Validators,
 } from '@angular/forms';
-
-function appointmentTimeValidator(
-    control: AbstractControl,
-): ValidationErrors | null {
-    const date = control.get('date')?.value as string;
-    const startTime = control.get('startTime')?.value as string;
-    const endTime = control.get('endTime')?.value as string;
-
-    if (!date || !startTime || !endTime) {
-        return null;
-    }
-
-    return startTime < endTime
-        ? null
-        : { invalidTimeRange: true };
-}
 
 @Component({
     selector: 'app-appointment-form',
