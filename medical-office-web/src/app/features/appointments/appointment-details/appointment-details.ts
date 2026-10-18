@@ -9,9 +9,9 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { forkJoin, map, switchMap } from 'rxjs';
+import { forkJoin, map, switchMap, finalize } from 'rxjs';
 
-import { Appointment } from '../appointment.model';
+import { Appointment, AppointmentStatus } from '../appointment.model';
 import { AppointmentService } from '../appointment.service';
 
 import { PatientService } from '../../patients/patient.service';
@@ -21,11 +21,14 @@ import { getAppointmentStatusLabel } from '../appointment-status.utils';
 import { LoadingIndicator } from '../../../shared/components/loading-indicator/loading-indicator';
 import { ErrorMessage } from '../../../shared/components/error-message/error-message';
 
+import { FormsModule } from '@angular/forms';
+
 @Component({
     selector: 'app-appointment-details',
     imports: [
         DatePipe,
         RouterLink,
+        FormsModule,
         LoadingIndicator,
         ErrorMessage,
     ],
@@ -48,6 +51,20 @@ export class AppointmentDetails implements OnInit {
     readonly isLoading = signal(false);
     readonly errorMessage = signal<string | null>(null);
     readonly canRetry = signal(false);
+
+    readonly selectedStatus = signal<AppointmentStatus>(
+        AppointmentStatus.Scheduled,
+    );
+
+    readonly isUpdatingStatus = signal(false);
+    readonly statusError = signal<string | null>(null);
+
+    readonly statusOptions = [
+        { value: AppointmentStatus.Scheduled, label: 'Scheduled' },
+        { value: AppointmentStatus.Completed, label: 'Completed' },
+        { value: AppointmentStatus.Cancelled, label: 'Cancelled' },
+        { value: AppointmentStatus.NoShow, label: 'No show' },
+    ];
 
     ngOnInit(): void {
         this.loadAppointment();
@@ -99,6 +116,8 @@ export class AppointmentDetails implements OnInit {
             .subscribe({
                 next: (appointment) => {
                     this.appointment.set(appointment);
+                    this.selectedStatus.set(appointment.status);
+                    this.statusError.set(null);
                     this.isLoading.set(false);
                 },
                 error: (error: unknown) => {
@@ -107,6 +126,69 @@ export class AppointmentDetails implements OnInit {
                     this.isLoading.set(false);
                 },
             });
+    }
+
+    updateStatus(): void {
+        const appointment = this.appointment();
+
+        if (!appointment || this.isUpdatingStatus() || this.isLoading()) {
+            return;
+        }
+        
+        const newStatus = this.selectedStatus();
+
+        if (newStatus === appointment.status) {
+            return;
+        }
+
+        this.isUpdatingStatus.set(true);
+        this.statusError.set(null);
+
+        this.appointmentService
+            .updateStatus(appointment.id, { status: newStatus })
+            .pipe(
+                finalize(() => this.isUpdatingStatus.set(false)),
+                takeUntilDestroyed(this.destroyRef),
+            )
+            .subscribe({
+                next: () => {
+                    this.appointment.update((current) => 
+                        current
+                        ? { ...current, status: newStatus }
+                        : null,
+                    );
+                },
+                error: (error: unknown) => {
+                    this.selectedStatus.set(appointment.status);
+                    this.statusError.set(this.getStatusErrorMessage(error));
+                },
+            });
+    }
+
+    private getStatusErrorMessage(error: unknown): string {
+        if (error instanceof HttpErrorResponse) {
+            switch (error.status) {
+                case 400:
+                    return 'The selected appointment status is invalid.';
+
+                case 401:
+                    return 'Your session has expired. Please sign in again.';
+
+                case 403:
+                    return 'You do not have permission to update appointment status.';
+
+                case 404:
+                    return 'This appointment could not be found.';
+
+                case 0:
+                    return 'Unable to connect to the server. Please check your connection.';
+
+                default:
+                    return 'Unable to update appointment status. Please try again.';
+            }
+        }
+
+        return 'An unexpected error occurred while updating the appointment status.';
     }
 
     private getErrorMessage(error: unknown): string {

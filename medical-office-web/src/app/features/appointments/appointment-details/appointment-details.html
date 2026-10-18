@@ -24,6 +24,40 @@
         </a>
     </div>
 
+
+    <div class="status-management">
+        <h3>Change appointment status</h3>
+
+        <div class="status-controls">
+            <div class="status-select">
+                <label for="appointmentStatus">New status</label>
+
+                <select id="appointmentStatus" [ngModel]="selectedStatus()" (ngModelChange)="selectedStatus.set($event)"
+                    [disabled]="isUpdatingStatus()">
+                    @for (option of statusOptions; track option.value) {
+                    <option [ngValue]="option.value">
+                        {{ option.label }}
+                    </option>
+                    }
+                </select>
+            </div>
+
+            <button type="button" class="save-status-button" [disabled]="
+        isUpdatingStatus() ||
+        selectedStatus() === appointment.status
+      " (click)="updateStatus()">
+                {{ isUpdatingStatus() ? 'Saving...' : 'Update status' }}
+            </button>
+        </div>
+
+        @if (statusError(); as message) {
+        <div class="status-error">
+            <app-error-message [message]="message" />
+        </div>
+        }
+    </div>
+
+
     <div class="details-card">
         <h2>Appointment information</h2>
 
