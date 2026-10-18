@@ -12,7 +12,7 @@ import { RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { forkJoin } from 'rxjs';
 
-import { Appointment } from './appointment.model';
+import { Appointment, AppointmentFilters } from './appointment.model';
 import { AppointmentService } from './appointment.service';
 
 import { PatientService } from '../patients/patient.service';
@@ -21,6 +21,8 @@ import { DoctorService } from '../doctors/doctor.service';
 import { LoadingIndicator } from '../../shared/components/loading-indicator/loading-indicator';
 import { EmptyState } from '../../shared/components/empty-state/empty-state';
 import { ErrorMessage } from '../../shared/components/error-message/error-message';
+
+import { Doctor } from '../doctors/doctor.model';
 
 import {
   getAppointmentStatusLabel,
@@ -55,6 +57,13 @@ export class Appointments implements OnInit {
   readonly errorMessage = signal<string | null>(null);  
   readonly canRetry = signal(false);
 
+  readonly selectedDoctorId = signal('');
+  readonly selectedDate = signal('');
+
+  readonly appliedFilters = signal<AppointmentFilters>({});
+
+  readonly doctorsList = signal<Doctor[]>([]);
+
   readonly appointmentCount = computed(
     () => this.appointments().length,
   );
@@ -69,7 +78,9 @@ export class Appointments implements OnInit {
     this.canRetry.set(false);
 
     forkJoin({
-      appointments: this.appointmentService.getAll(),
+      appointments: this.appointmentService.getAll(
+        this.appliedFilters(),
+      ),
       patients: this.patientService.getAll(),
       doctors: this.doctorService.getAll(), 
     })
@@ -96,6 +107,8 @@ export class Appointments implements OnInit {
             ),
           );
 
+          this.doctorsList.set(doctors);
+
           this.isLoading.set(false);
         },
         error: (error: unknown) => {
@@ -116,6 +129,29 @@ export class Appointments implements OnInit {
 
   getDoctorName(doctorId: string): string {
     return this.doctorNames().get(doctorId) ?? 'Unknown doctor';
+  }
+
+  applyFilters(): void {
+    const filters: AppointmentFilters = {};
+
+    if (this.selectedDoctorId()) {
+      filters.doctorId = this.selectedDoctorId();
+    }
+
+    if (this.selectedDate()) {
+      filters.date = this.selectedDate();
+    }
+
+    this.appliedFilters.set(filters);
+    this.loadAppointments();
+  }
+
+  clearFilters(): void {
+    this.selectedDoctorId.set('');
+    this.selectedDate.set('');
+    this.appliedFilters.set({});
+
+    this.loadAppointments();
   }
 
   private getErrorMessage(error: unknown): string {

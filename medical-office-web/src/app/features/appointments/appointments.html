@@ -1,91 +1,111 @@
-
 <section class="appointments-page">
-  
-<header class="page-heading">
-  <div>
-    <h1>Appointments</h1>
-    <p>View and manage scheduled appointments.</p>
-  </div>
 
-  <a class="primary-button" routerLink="/appointments/new">
-    New appointment
-  </a>
-</header>
+  <header class="page-heading">
+    <div>
+      <h1>Appointments</h1>
+      <p>View and manage scheduled appointments.</p>
+    </div>
+
+    <a class="primary-button" routerLink="/appointments/new">
+      New appointment
+    </a>
+  </header>
+
+
+
+  <div class="appointment-filters">
+    <div class="filter-field">
+      <label for="doctorFilter">Doctor</label>
+
+      <select id="doctorFilter" [value]="selectedDoctorId()" (change)="selectedDoctorId.set($any($event.target).value)"
+        [disabled]="isLoading()">
+        <option value="">All doctors</option>
+
+        @for (doctor of doctorsList(); track doctor.id) {
+        <option [value]="doctor.id">
+          Dr. {{ doctor.firstName }} {{ doctor.lastName }}
+        </option>
+        }
+      </select>
+    </div>
+
+    <div class="filter-field">
+      <label for="dateFilter">Date</label>
+
+      <input id="dateFilter" type="date" [value]="selectedDate()" (change)="selectedDate.set($any($event.target).value)"
+        [disabled]="isLoading()" />
+    </div>
+
+    <div class="filter-actions">
+      <button type="button" class="apply-filter-button" [disabled]="isLoading()" (click)="applyFilters()">
+        Apply filters
+      </button>
+
+      <button type="button" class="clear-filter-button" [disabled]="isLoading()" (click)="clearFilters()">
+        Clear
+      </button>
+    </div>
+  </div>
 
 
   @if (isLoading()) {
-    <app-loading-indicator
-      message="Loading appointments..."
-    />
+  <app-loading-indicator message="Loading appointments..." />
   } @else if (errorMessage(); as message) {
-    <app-error-message
-      [message]="message"
-      [retryable]="canRetry()"
-      (retry)="loadAppointments()"
-    />
+  <app-error-message [message]="message" [retryable]="canRetry()" (retry)="loadAppointments()" />
   } @else if (appointments().length === 0) {
-    <app-empty-state
-      title="No appointments found"
-      description="There are no appointments to display."
-    />
+  <app-empty-state title="No appointments found" description="There are no appointments to display." />
   } @else {
-    <div class="table-container">
-      <table>
-        <thead>
-          <tr>
-            <th scope="col">Date & Time</th>
-            <th scope="col">Patient</th>
-            <th scope="col">Doctor</th>
-            <th scope="col">Status</th>
-            <th scope="col">Actions</th>
-          </tr>
-        </thead>
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Date & Time</th>
+          <th scope="col">Patient</th>
+          <th scope="col">Doctor</th>
+          <th scope="col">Status</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
 
-        <tbody>
-          @for (appointment of appointments(); track appointment.id) {
-            <tr>
-              <td>
-                <div class="appointment-date">
-                  {{ appointment.startTime | date:'mediumDate' }}
-                </div>
+      <tbody>
+        @for (appointment of appointments(); track appointment.id) {
+        <tr>
+          <td>
+            <div class="appointment-date">
+              {{ appointment.startTime | date:'mediumDate' }}
+            </div>
 
-                <div class="appointment-time">
-                  {{ appointment.startTime | date:'shortTime' }}
-                  –
-                  {{ appointment.endTime | date:'shortTime' }}
-                </div>
-              </td>
+            <div class="appointment-time">
+              {{ appointment.startTime | date:'shortTime' }}
+              –
+              {{ appointment.endTime | date:'shortTime' }}
+            </div>
+          </td>
 
-              <td class="person-name">
-                {{ getPatientName(appointment.patientId) }}
-              </td>
+          <td class="person-name">
+            {{ getPatientName(appointment.patientId) }}
+          </td>
 
-              <td>
-                {{ getDoctorName(appointment.doctorId) }}
-              </td>
+          <td>
+            {{ getDoctorName(appointment.doctorId) }}
+          </td>
 
-              <td>
-                <span
-                  class="status-badge"
-                  [class]="getStatusClass(appointment.status)"
-                >
-                  {{ getStatusLabel(appointment.status) }}
-                </span>
-              </td>
+          <td>
+            <span class="status-badge" [class]="getStatusClass(appointment.status)">
+              {{ getStatusLabel(appointment.status) }}
+            </span>
+          </td>
 
-              <td>
-                <a
-                  class="details-link"
-                  [routerLink]="['/appointments', appointment.id]"
-                  [attr.aria-label]="'View appointment details'"
-                >
-                  View details
-                </a>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
+          <td>
+            <a class="details-link" [routerLink]="['/appointments', appointment.id]"
+              [attr.aria-label]="'View appointment details'">
+              View details
+            </a>
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
   }
 </section>
