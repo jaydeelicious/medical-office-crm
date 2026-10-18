@@ -126,3 +126,79 @@
     outline-offset: 3px;
   }
 }
+
+
+.status-management {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid var(--color-border);
+
+  h3 {
+    margin: 0 0 18px;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+}
+
+.status-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.status-select {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+
+  label {
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  select {
+    width: 100%;
+    min-height: 42px;
+    padding: 10px 12px;
+    background: var(--color-background);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    font: inherit;
+
+    &:focus-visible {
+      outline: 2px solid var(--color-text-muted);
+      outline-offset: 2px;
+    }
+  }
+}
+
+.save-status-button {
+  min-height: 42px;
+  padding: 10px 18px;
+  background: var(--color-nav-active);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.status-error {
+  margin-top: 16px;
+}
+
+@media (max-width: 600px) {
+  .status-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

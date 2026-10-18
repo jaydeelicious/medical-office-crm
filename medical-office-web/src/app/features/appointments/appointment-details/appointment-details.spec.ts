@@ -52,6 +52,7 @@ describe('AppointmentDetails', () => {
 
     const appointmentServiceMock = {
         getById: vi.fn(),
+        updateStatus: vi.fn(),
     };
 
     const patientServiceMock = {
@@ -69,6 +70,7 @@ describe('AppointmentDetails', () => {
         appointmentServiceMock.getById.mockReset();
         patientServiceMock.getById.mockReset();
         doctorServiceMock.getById.mockReset();
+        appointmentServiceMock.updateStatus.mockReset();
 
         routeId = appointment.id;
 
@@ -318,4 +320,187 @@ describe('AppointmentDetails', () => {
         );
     });
 
+
+    it('should initialize the selected status from the appointment', () => {
+        appointmentServiceMock.getById.mockReturnValue(of(appointment));
+
+        fixture.detectChanges();
+
+        expect(component.selectedStatus()).toBe(
+            AppointmentStatus.Scheduled,
+        );
+
+        expect(component.isUpdatingStatus()).toBe(false);
+    });
+
+    it('should update appointment status successfully', () => {
+        appointmentServiceMock.getById.mockReturnValue(of(appointment));
+        appointmentServiceMock.updateStatus.mockReturnValue(of(void 0));
+
+        fixture.detectChanges();
+
+        component.selectedStatus.set(AppointmentStatus.Completed);
+        component.updateStatus();
+
+        expect(appointmentServiceMock.updateStatus).toHaveBeenCalledWith(
+            appointment.id,
+            { status: AppointmentStatus.Completed },
+        );
+
+        expect(component.appointment()?.status).toBe(
+            AppointmentStatus.Completed,
+        );
+
+        expect(component.isUpdatingStatus()).toBe(false);
+        expect(component.statusError()).toBeNull();
+    });
+
+    it('should allow changing a cancelled appointment back to scheduled', () => {
+        const cancelledAppointment: Appointment = {
+            ...appointment,
+            status: AppointmentStatus.Cancelled,
+        };
+
+        appointmentServiceMock.getById.mockReturnValue(
+            of(cancelledAppointment),
+        );
+
+        appointmentServiceMock.updateStatus.mockReturnValue(of(void 0));
+
+        fixture.detectChanges();
+
+        component.selectedStatus.set(AppointmentStatus.Scheduled);
+        component.updateStatus();
+
+        expect(appointmentServiceMock.updateStatus).toHaveBeenCalledWith(
+            appointment.id,
+            { status: AppointmentStatus.Scheduled },
+        );
+
+        expect(component.appointment()?.status).toBe(
+            AppointmentStatus.Scheduled,
+        );
+    });
+
+    it('should not update when the selected status is unchanged', () => {
+        appointmentServiceMock.getById.mockReturnValue(of(appointment));
+
+        fixture.detectChanges();
+
+        component.updateStatus();
+
+        expect(appointmentServiceMock.updateStatus).not.toHaveBeenCalled();
+    });
+
+    it('should prevent duplicate status update requests', () => {
+        const response = new Subject<void>();
+
+        appointmentServiceMock.getById.mockReturnValue(of(appointment));
+        appointmentServiceMock.updateStatus.mockReturnValue(
+            response.asObservable(),
+        );
+
+        fixture.detectChanges();
+
+        component.selectedStatus.set(AppointmentStatus.Completed);
+
+        component.updateStatus();
+        component.updateStatus();
+
+        expect(appointmentServiceMock.updateStatus).toHaveBeenCalledOnce();
+        expect(component.isUpdatingStatus()).toBe(true);
+
+        response.next();
+        response.complete();
+
+        expect(component.isUpdatingStatus()).toBe(false);
+        expect(component.appointment()?.status).toBe(
+            AppointmentStatus.Completed,
+        );
+    });
+
+    it('should preserve the original status when updating fails', () => {
+        appointmentServiceMock.getById.mockReturnValue(of(appointment));
+
+        appointmentServiceMock.updateStatus.mockReturnValue(
+            throwError(
+                () => new HttpErrorResponse({ status: 500 }),
+            ),
+        );
+
+        fixture.detectChanges();
+
+        component.selectedStatus.set(AppointmentStatus.Completed);
+        component.updateStatus();
+        fixture.detectChanges();
+
+        expect(component.appointment()?.status).toBe(
+            AppointmentStatus.Scheduled,
+        );
+
+        expect(component.selectedStatus()).toBe(
+            AppointmentStatus.Scheduled,
+        );
+
+        expect(component.statusError()).toContain(
+            'Unable to update appointment status',
+        );
+
+        expect(component.isUpdatingStatus()).toBe(false);
+    });
+
+    it('should handle forbidden status updates', () => {
+        appointmentServiceMock.getById.mockReturnValue(of(appointment));
+
+        appointmentServiceMock.updateStatus.mockReturnValue(
+            throwError(
+                () => new HttpErrorResponse({ status: 403 }),
+            ),
+        );
+
+        fixture.detectChanges();
+
+        component.selectedStatus.set(AppointmentStatus.Cancelled);
+        component.updateStatus();
+
+        expect(component.statusError()).toContain(
+            'You do not have permission',
+        );
+
+        expect(component.appointment()?.status).toBe(
+            AppointmentStatus.Scheduled,
+        );
+    });
+
+    it('should disable the update button while saving', () => {
+        const response = new Subject<void>();
+
+        appointmentServiceMock.getById.mockReturnValue(of(appointment));
+        appointmentServiceMock.updateStatus.mockReturnValue(
+            response.asObservable(),
+        );
+
+        fixture.detectChanges();
+
+        component.selectedStatus.set(AppointmentStatus.Completed);
+        component.updateStatus();
+        fixture.detectChanges();
+
+        const button = fixture.nativeElement.querySelector(
+            '.save-status-button',
+        ) as HTMLButtonElement;
+
+        expect(button.disabled).toBe(true);
+        expect(button.textContent).toContain('Saving...');
+
+        response.next();
+        response.complete();
+
+        fixture.detectChanges();
+
+        expect(button.disabled).toBe(true);
+        expect(component.appointment()?.status).toBe(
+            AppointmentStatus.Completed,
+        );
+    });
 });
