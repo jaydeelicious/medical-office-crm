@@ -357,4 +357,28 @@ describe('AppointmentForm', () => {
 
     expect(appointmentServiceMock.create).not.toHaveBeenCalled();
   });
+
+  it('should preserve local office time when scheduling late at night', () => {
+    appointmentServiceMock.create.mockReturnValue(
+      of(appointment),
+    );
+
+    fixture.detectChanges();
+    fillValidForm();
+
+    component.form.patchValue({
+      date: '2026-10-20',
+      startTime: '23:30',
+      endTime: '23:59',
+    });
+
+    component.onSubmit();
+
+    expect(appointmentServiceMock.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        startTime: '2026-10-20T23:30:00',
+        endTime: '2026-10-20T23:59:00',
+      }),
+    );
+  });
 });
