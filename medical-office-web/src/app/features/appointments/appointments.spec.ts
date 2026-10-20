@@ -462,4 +462,81 @@ describe('Appointments', () => {
         );
     });
 
+    it('should apply doctor and date filters through the UI', () => {
+        appointmentServiceMock.getAll.mockReturnValue(
+            of([appointment]),
+        );
+
+        fixture.detectChanges();
+
+        const doctorSelect = fixture.nativeElement.querySelector(
+            '#doctorFilter',
+        ) as HTMLSelectElement;
+
+        const dateInput = fixture.nativeElement.querySelector(
+            '#dateFilter',
+        ) as HTMLInputElement;
+
+        doctorSelect.value = doctor.id;
+        doctorSelect.dispatchEvent(new Event('change'));
+
+        dateInput.value = '2026-10-20';
+        dateInput.dispatchEvent(new Event('change'));
+
+        fixture.detectChanges();
+
+        // Changing inputs alone should not trigger a new request.
+        expect(appointmentServiceMock.getAll).toHaveBeenCalledOnce();
+
+        const applyButton = fixture.nativeElement.querySelector(
+            '.apply-filter-button',
+        ) as HTMLButtonElement;
+
+        applyButton.click();
+
+        expect(appointmentServiceMock.getAll).toHaveBeenCalledTimes(2);
+
+        expect(appointmentServiceMock.getAll).toHaveBeenLastCalledWith({
+            doctorId: doctor.id,
+            date: '2026-10-20',
+        });
+    });
+
+    it('should clear applied filters through the UI', () => {
+        appointmentServiceMock.getAll.mockReturnValue(
+            of([appointment]),
+        );
+
+        fixture.detectChanges();
+
+        component.selectedDoctorId.set(doctor.id);
+        component.selectedDate.set('2026-10-20');
+        component.applyFilters();
+
+        fixture.detectChanges();
+
+        const clearButton = fixture.nativeElement.querySelector(
+            '.clear-filter-button',
+        ) as HTMLButtonElement;
+
+        clearButton.click();
+        fixture.detectChanges();
+
+        expect(component.selectedDoctorId()).toBe('');
+        expect(component.selectedDate()).toBe('');
+        expect(component.appliedFilters()).toEqual({});
+
+        expect(appointmentServiceMock.getAll).toHaveBeenLastCalledWith({});
+
+        const doctorSelect = fixture.nativeElement.querySelector(
+            '#doctorFilter',
+        ) as HTMLSelectElement;
+
+        const dateInput = fixture.nativeElement.querySelector(
+            '#dateFilter',
+        ) as HTMLInputElement;
+
+        expect(doctorSelect.value).toBe('');
+        expect(dateInput.value).toBe('');
+    });
 });

@@ -503,4 +503,54 @@ describe('AppointmentDetails', () => {
             AppointmentStatus.Completed,
         );
     });
+
+    it('should update appointment status using the dropdown and button', () => {
+        appointmentServiceMock.getById.mockReturnValue(
+            of(appointment),
+        );
+
+        appointmentServiceMock.updateStatus.mockReturnValue(
+            of(void 0),
+        );
+
+        fixture.detectChanges();
+
+        const select = fixture.nativeElement.querySelector(
+            '#appointmentStatus',
+        ) as HTMLSelectElement;
+
+        const updateButton = fixture.nativeElement.querySelector(
+            '.save-status-button',
+        ) as HTMLButtonElement;
+
+        expect(updateButton.disabled).toBe(true);
+
+        // ngValue preserves the numeric enum values.
+        select.selectedIndex = 1;
+        select.dispatchEvent(new Event('change'));
+
+        fixture.detectChanges();
+
+        expect(component.selectedStatus()).toBe(
+            AppointmentStatus.Completed,
+        );
+
+        expect(updateButton.disabled).toBe(false);
+
+        updateButton.click();
+        fixture.detectChanges();
+
+        expect(appointmentServiceMock.updateStatus).toHaveBeenCalledWith(
+            appointment.id,
+            { status: AppointmentStatus.Completed },
+        );
+
+        expect(component.appointment()?.status).toBe(
+            AppointmentStatus.Completed,
+        );
+
+        // The displayed status should reflect the saved value.
+        expect(fixture.nativeElement.textContent).toContain('Completed');
+        expect(updateButton.disabled).toBe(true);
+    });
 });
