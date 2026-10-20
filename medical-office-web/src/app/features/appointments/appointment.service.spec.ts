@@ -242,4 +242,45 @@ describe('AppointmentService', () => {
 
     expect(actualStatus).toBe(409);
   });
+
+  
+  it('should filter appointments by doctor only', () => {
+    service.getAll({
+      doctorId: appointment.doctorId,
+    }).subscribe((result) => {
+      expect(result).toEqual([appointment]);
+    });
+
+    const request = httpMock.expectOne(
+      (req) => req.url === apiUrl,
+    );
+
+    expect(request.request.method).toBe('GET');
+    expect(request.request.params.get('doctorId'))
+      .toBe(appointment.doctorId);
+    expect(request.request.params.has('date')).toBe(false);
+
+    request.flush([appointment]);
+  });
+
+  
+  it('should filter appointments by date only', () => {
+    service.getAll({
+      date: '2026-10-20',
+    }).subscribe((result) => {
+      expect(result).toEqual([appointment]);
+    });
+
+    const request = httpMock.expectOne(
+      (req) => req.url === apiUrl,
+    );
+
+    expect(request.request.method).toBe('GET');
+    expect(request.request.params.get('date'))
+      .toBe('2026-10-20');
+    expect(request.request.params.has('doctorId')).toBe(false);
+
+    request.flush([appointment]);
+  });
+
 });
