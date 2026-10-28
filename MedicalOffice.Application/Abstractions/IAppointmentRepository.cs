@@ -28,5 +28,10 @@ namespace MedicalOffice.Application.Abstractions
 
         Task SaveChangesAsync(
             CancellationToken cancellationToken = default);
+
+        Task<T> ExecuteWithDoctorLockAsync<T>(
+            Guid doctorId,
+            Func<Task<T>> operation,
+            CancellationToken cancellationToken = default);
     }
 }
