@@ -25,6 +25,17 @@ namespace MedicalOffice.Tests.Appointments
         public AppointmentServiceTests()
         {
             _appointmentRepositoryMock = new Mock<IAppointmentRepository>();
+
+            _appointmentRepositoryMock
+                .Setup(r => r.ExecuteWithDoctorLockAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Func<Task<AppointmentDto>>>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns((
+                    Guid doctorId,
+                    Func<Task<AppointmentDto>> operation,
+                    CancellationToken cancellationToken) => operation());
+
             _doctorRepositoryMock = new Mock<IDoctorRepository>();
             _patientRepositoryMock = new Mock<IPatientRepository>();
 
@@ -472,5 +483,70 @@ namespace MedicalOffice.Tests.Appointments
                 Times.Never);
         }
 
+        [Fact]
+        public async Task CreateAsync_WhenAppointmentIsValid_UsesDoctorLock()
+        {
+            // Arrange
+            var patientId = Guid.NewGuid();
+            var doctorId = Guid.NewGuid();
+
+            var request = new CreateAppointmentRequest
+            {
+                PatientId = patientId,
+                DoctorId = doctorId,
+                StartTime = new DateTime(2026, 11, 10, 10, 0, 0),
+                EndTime = new DateTime(2026, 11, 10, 11, 0, 0)
+            };
+
+            _createValidatorMock
+                .Setup(v => v.ValidateAsync(
+                    request,
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(
+                    new FluentValidation.Results.ValidationResult());
+
+            _patientRepositoryMock
+                .Setup(r => r.GetByIdAsync(
+                    patientId,
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Patient
+                {
+                    Id = patientId,
+                    FirstName = "John",
+                    LastName = "Doe"
+                });
+
+            _doctorRepositoryMock
+                .Setup(r => r.GetByIdAsync(
+                    doctorId,
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Doctor
+                {
+                    Id = doctorId,
+                    FirstName = "Maria",
+                    LastName = "Smith",
+                    Specialty = "Cardiology"
+                });
+
+            _appointmentRepositoryMock
+                .Setup(r => r.HasOverlapAsync(
+                    doctorId,
+                    request.StartTime,
+                    request.EndTime,
+                    null,
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(false);
+
+            // Act
+            await _service.CreateAsync(request);
+
+            // Assert
+            _appointmentRepositoryMock.Verify(
+                r => r.ExecuteWithDoctorLockAsync(
+                    doctorId,
+                    It.IsAny<Func<Task<AppointmentDto>>>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
     }
 }

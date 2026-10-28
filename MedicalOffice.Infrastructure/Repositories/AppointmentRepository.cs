@@ -1,8 +1,11 @@
-﻿using MedicalOffice.Application.Abstractions;
+﻿using System.Data;
+using System.Data.Common;
+using MedicalOffice.Application.Abstractions;
 using MedicalOffice.Domain.Entities;
 using MedicalOffice.Domain.Enums;
 using MedicalOffice.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace MedicalOffice.Infrastructure.Repositories
 {
@@ -91,6 +94,79 @@ namespace MedicalOffice.Infrastructure.Repositories
             CancellationToken cancellationToken = default)
         {
             await _context.SaveChangesAsync(cancellationToken);
+        }
+
+        public async Task<T> ExecuteWithDoctorLockAsync<T>(
+            Guid doctorId,
+            Func<Task<T>> operation,
+            CancellationToken cancellationToken = default)
+        {
+            var strategy = _context.Database.CreateExecutionStrategy();
+
+            return await strategy.ExecuteAsync(async () =>
+            {
+                await using var transaction =
+                    await _context.Database.BeginTransactionAsync(
+                        IsolationLevel.ReadCommitted,
+                        cancellationToken);
+
+                if (_context.Database.IsSqlServer())
+                {
+                    await AcquireDoctorLockAsync(
+                        doctorId,
+                        transaction,
+                        cancellationToken);
+                }
+                else if (_context.Database.ProviderName != "Microsoft.EntityFrameworkCore.Sqlite")
+                {
+                    throw new NotSupportedException("Scheduling transactions require a supported database provider.");
+                }
+
+                var result = await operation();
+
+                await transaction.CommitAsync(cancellationToken);
+
+                return result;
+            });
+        }
+
+        private async Task AcquireDoctorLockAsync(
+            Guid doctorId,
+            IDbContextTransaction transaction,
+            CancellationToken cancellationToken)
+        {
+            var connection = _context.Database.GetDbConnection();
+
+            await using var command = connection.CreateCommand();
+
+            command.Transaction = transaction.GetDbTransaction();
+
+            command.CommandText = """
+                DECLARE @result int;
+
+                EXEC @result = sp_getapplock
+                    @Resource = @resource,
+                    @LockMode = 'Exclusive',
+                    @LockOwner = 'Transaction',
+                    @LockTimeout = 10000;
+
+                SELECT @result;
+                """;
+
+            var resourceParameter = command.CreateParameter();
+            resourceParameter.ParameterName = "@resource";
+            resourceParameter.Value = $"appointment:doctor:{doctorId:N}";
+
+            command.Parameters.Add(resourceParameter);
+
+            var result = await command.ExecuteScalarAsync(cancellationToken);
+
+            var lockResult = Convert.ToInt32(result);
+
+            if (lockResult < 0)
+            {
+                throw new TimeoutException("Unable to acquire the doctor's scheduling lock.");
+            }
         }
     }
 }

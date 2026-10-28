@@ -79,48 +79,53 @@ namespace MedicalOffice.Application.Appointments
                 throw new NotFoundException("Patient does not exist.");
             }
 
-            var doctor =
-                await _doctorRepository.GetByIdAsync(
-                    request.DoctorId,
-                    cancellationToken);
+            var doctor = await _doctorRepository.GetByIdAsync(
+                request.DoctorId,
+                cancellationToken);
 
             if (doctor is null)
             {
                 throw new NotFoundException("Doctor does not exist.");
             }
 
-            var hasOverlap =
-                await _appointmentRepository.HasOverlapAsync(
-                    request.DoctorId,
-                    request.StartTime,
-                    request.EndTime,
-                    cancellationToken: cancellationToken);
+            return await _appointmentRepository.ExecuteWithDoctorLockAsync(
+                request.DoctorId,
+                async () =>
+                {
+                    var hasOverlap =
+                        await _appointmentRepository.HasOverlapAsync(
+                            request.DoctorId,
+                            request.StartTime,
+                            request.EndTime,
+                            cancellationToken: cancellationToken);
 
-            if (hasOverlap)
-            {
-                throw new ConflictException(
-                    "The doctor already has an appointment during this time.");
-            }
+                    if (hasOverlap)
+                    {
+                        throw new ConflictException(
+                            "The doctor already has an appointment during this time.");
+                    }
 
-            var appointment = new Appointment
-            {
-                Id = Guid.NewGuid(),
-                PatientId = request.PatientId,
-                DoctorId = request.DoctorId,
-                StartTime = request.StartTime,
-                EndTime = request.EndTime,
-                Status = AppointmentStatus.Scheduled,
-                Notes = request.Notes
-            };
+                    var appointment = new Appointment
+                    {
+                        Id = Guid.NewGuid(),
+                        PatientId = request.PatientId,
+                        DoctorId = request.DoctorId,
+                        StartTime = request.StartTime,
+                        EndTime = request.EndTime,
+                        Status = AppointmentStatus.Scheduled,
+                        Notes = request.Notes
+                    };
 
-            await _appointmentRepository.AddAsync(
-                appointment,
+                    await _appointmentRepository.AddAsync(
+                        appointment,
+                        cancellationToken);
+
+                    await _appointmentRepository.SaveChangesAsync(
+                        cancellationToken);
+
+                    return MapToDto(appointment);
+                },
                 cancellationToken);
-
-            await _appointmentRepository.SaveChangesAsync(
-                cancellationToken);
-
-            return MapToDto(appointment);
         }
 
         public async Task<bool> RescheduleAsync(
