@@ -54,6 +54,7 @@ export class AppointmentReschedule implements OnInit {
     readonly isSubmitting = signal(false);
     readonly submitError = signal<string | null>(null);
     readonly validationErrors = signal<string[]>([]);
+    readonly hasConflict = signal(false);
 
     readonly form = this.fb.group(
         {
@@ -130,7 +131,8 @@ export class AppointmentReschedule implements OnInit {
         if (
             !appointment ||
             this.isLoading() ||
-            this.isSubmitting()
+            this.isSubmitting() ||
+            this.hasConflict()
         ) {
             return;
         }
@@ -167,6 +169,13 @@ export class AppointmentReschedule implements OnInit {
                     ]);
                 },
                 error: (error: unknown) => {
+                    if (
+                        error instanceof HttpErrorResponse &&
+                        error.status === 409
+                    ) {
+                        this.hasConflict.set(true);
+                    }
+
                     this.handleSubmitError(error);
                 },
             });
@@ -188,6 +197,46 @@ export class AppointmentReschedule implements OnInit {
         }
 
         void this.router.navigate(['/appointments']);
+    }
+
+    refreshAfterConflict(): void {
+        const appointment = this.appointment();
+
+        if (
+            !appointment ||
+            this.isLoading() ||
+            this.isSubmitting()
+        ) {
+            return;
+        }
+
+        this.isLoading.set(true);
+        this.submitError.set(null);
+        this.errorMessage.set(null);
+
+        this.appointmentService
+            .getById(appointment.id)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (latestAppointment) => {
+                    this.appointment.set(latestAppointment);
+
+                    // Keep the user's proposed date and time.
+                    // Only refresh the appointment's server state.
+                    this.hasConflict.set(false);
+                    this.validationErrors.set([]);
+                    this.isLoading.set(false);
+                },
+                error: (error: unknown) => {
+                    this.submitError.set(
+                        this.getErrorMessage(error),
+                    );
+
+                    // Keep submission blocked until a successful refresh.
+                    this.hasConflict.set(true);
+                    this.isLoading.set(false);
+                },
+            });
     }
 
 
@@ -242,7 +291,7 @@ export class AppointmentReschedule implements OnInit {
                     return 'This appointment could not be found. It may have been deleted.';
 
                 case 409:
-                    return 'The doctor already has an appointment during this time. Please choose another time.';
+                    return 'This appointment may have changed, or the selected time is no longer available. Refresh the appointment before trying again.';
 
                 case 0:
                     return 'Unable to connect to the server. Please check your connection.';
