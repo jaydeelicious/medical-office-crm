@@ -137,6 +137,8 @@ namespace MedicalOffice.Application.Appointments
                 request,
                 cancellationToken);
 
+            var expectedVersion = AppointmentConcurrency.DecodeRowVersion(request.RowVersion);
+
             var appointment = await _appointmentRepository.GetByIdAsync(
                 id,
                 cancellationToken);
@@ -157,6 +159,10 @@ namespace MedicalOffice.Application.Appointments
                     {
                         return false;
                     }
+
+                    AppointmentConcurrency.EnsureMatches(
+                        appointment.RowVersion,
+                        expectedVersion);
 
                     var currentAppointment = appointment;
 
@@ -194,6 +200,8 @@ namespace MedicalOffice.Application.Appointments
                 request,
                 cancellationToken);
 
+            var expectedVersion = AppointmentConcurrency.DecodeRowVersion(request.RowVersion);
+
             var appointment =
                 await _appointmentRepository.GetByIdAsync(
                     id,
@@ -214,6 +222,10 @@ namespace MedicalOffice.Application.Appointments
                     {
                         return false;
                     }
+
+                    AppointmentConcurrency.EnsureMatches(
+                        appointment.RowVersion,
+                        expectedVersion);
 
                     var isReactivation =
                         appointment.Status == AppointmentStatus.Cancelled &&
@@ -246,8 +258,12 @@ namespace MedicalOffice.Application.Appointments
 
         public async Task<bool> DeleteAsync(
             Guid id,
+            string rowVersion,
             CancellationToken cancellationToken = default)
         {
+            var expectedVersion =
+                AppointmentConcurrency.DecodeRowVersion(rowVersion);
+
             var appointment =
                 await _appointmentRepository.GetByIdAsync(
                     id,
@@ -258,12 +274,28 @@ namespace MedicalOffice.Application.Appointments
                 return false;
             }
 
-            _appointmentRepository.Remove(appointment);
+            return await _appointmentRepository.ExecuteWithDoctorLockAsync(
+                appointment.DoctorId,
+                async () =>
+                {
+                    if (!await _appointmentRepository.ReloadAsync(
+                        appointment,
+                        cancellationToken))
+                    {
+                        return false;
+                    }
 
-            await _appointmentRepository.SaveChangesAsync(
+                    AppointmentConcurrency.EnsureMatches(
+                        appointment.RowVersion,
+                        expectedVersion);
+
+                    _appointmentRepository.Remove(appointment);
+
+                    await _appointmentRepository.SaveChangesAsync(cancellationToken);
+
+                    return true;
+                },
                 cancellationToken);
-
-            return true;
         }
 
         private static AppointmentDto MapToDto(
@@ -277,7 +309,8 @@ namespace MedicalOffice.Application.Appointments
                 StartTime = appointment.StartTime,
                 EndTime = appointment.EndTime,
                 Status = appointment.Status,
-                Notes = appointment.Notes
+                Notes = appointment.Notes,
+                RowVersion = Convert.ToBase64String(appointment.RowVersion)
             };
         }
     }

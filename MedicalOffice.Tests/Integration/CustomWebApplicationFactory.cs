@@ -51,6 +51,7 @@ namespace MedicalOffice.Tests.Integration
 
                     options.UseSqlite(connection);
                     options.UseOpenIddict();
+                    options.AddInterceptors(new SqliteRowVersionInterceptor());
                 });
 
                 services

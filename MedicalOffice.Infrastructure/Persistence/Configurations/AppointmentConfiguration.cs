@@ -16,6 +16,9 @@ namespace MedicalOffice.Infrastructure.Persistence.Configurations
             builder.Property(a => a.Notes)
                 .HasMaxLength(1000);
 
+            builder.Property(a => a.RowVersion)
+                .IsRowVersion();
+
             builder.HasOne(a => a.Patient)
                 .WithMany()
                 .HasForeignKey(a => a.PatientId)

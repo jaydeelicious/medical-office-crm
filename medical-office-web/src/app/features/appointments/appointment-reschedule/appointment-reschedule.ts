@@ -145,7 +145,8 @@ export class AppointmentReschedule implements OnInit {
 
         const request: RescheduleAppointmentRequest = {
             startTime: `${values.date}T${values.startTime}:00`,
-            endTime: `${values.date}T${values.endTime}:00`
+            endTime: `${values.date}T${values.endTime}:00`,
+            rowVersion: appointment.rowVersion,
         };
 
         this.isSubmitting.set(true);

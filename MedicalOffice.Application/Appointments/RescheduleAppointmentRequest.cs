@@ -9,5 +9,7 @@ namespace MedicalOffice.Application.Appointments
         public DateTime StartTime { get; set; }
 
         public DateTime EndTime { get; set; }
+
+        public string RowVersion { get; set; } = string.Empty;
     }
 }

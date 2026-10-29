@@ -30,6 +30,7 @@ describe('AppointmentReschedule', () => {
         endTime: '2026-10-20T09:30:00',
         status: AppointmentStatus.Scheduled,
         notes: 'Follow-up consultation',
+        rowVersion: 'AQIDBAUGBwg=',
     };
 
     const appointmentServiceMock = {
@@ -163,6 +164,7 @@ describe('AppointmentReschedule', () => {
             {
                 startTime: '2026-10-21T10:00:00',
                 endTime: '2026-10-21T10:30:00',
+                rowVersion: appointment.rowVersion,
             },
         );
 
@@ -366,6 +368,7 @@ describe('AppointmentReschedule', () => {
             {
                 startTime: '2026-10-21T23:00:00',
                 endTime: '2026-10-21T23:45:00',
+                rowVersion: appointment.rowVersion,
             },
         );
     });

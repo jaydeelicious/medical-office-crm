@@ -1,6 +1,7 @@
 ﻿using MedicalOffice.Application.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using FluentValidation;
 
 namespace MedicalOffice.Api.ExceptionHandling
@@ -49,7 +50,7 @@ namespace MedicalOffice.Api.ExceptionHandling
             var statusCode = exception switch
             {
                 NotFoundException => StatusCodes.Status404NotFound,
-                ConflictException => StatusCodes.Status409Conflict,
+                ConflictException or DbUpdateConcurrencyException => StatusCodes.Status409Conflict,
                 _ => StatusCodes.Status500InternalServerError
             };
 

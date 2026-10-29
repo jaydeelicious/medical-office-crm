@@ -12,6 +12,10 @@ namespace MedicalOffice.Application.Appointments
             RuleFor(x => x.StartTime)
                 .LessThan(x => x.EndTime)
                 .WithMessage("Start time must be earlier than end time");
+
+            RuleFor(x => x.RowVersion)
+                .Must(AppointmentConcurrency.IsValidRowVersion)
+                .WithMessage("A valid appointment row version is required.");
         }
     }
 }

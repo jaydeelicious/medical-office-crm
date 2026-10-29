@@ -58,6 +58,7 @@ export class AppointmentDetails implements OnInit {
 
     readonly isUpdatingStatus = signal(false);
     readonly statusError = signal<string | null>(null);
+    readonly hasStatusConflict = signal(false);
 
     readonly statusOptions = [
         { value: AppointmentStatus.Scheduled, label: 'Scheduled' },
@@ -82,6 +83,8 @@ export class AppointmentDetails implements OnInit {
         }
 
         this.isLoading.set(true);
+        this.hasStatusConflict.set(false);
+        this.statusError.set(null);
         this.errorMessage.set(null);
         this.canRetry.set(false);
         this.appointment.set(null);
@@ -145,21 +148,27 @@ export class AppointmentDetails implements OnInit {
         this.statusError.set(null);
 
         this.appointmentService
-            .updateStatus(appointment.id, { status: newStatus })
+            .updateStatus(appointment.id, { 
+                status: newStatus,
+                rowVersion: appointment.rowVersion,
+            })
             .pipe(
                 finalize(() => this.isUpdatingStatus.set(false)),
                 takeUntilDestroyed(this.destroyRef),
             )
             .subscribe({
                 next: () => {
-                    this.appointment.update((current) => 
-                        current
-                        ? { ...current, status: newStatus }
-                        : null,
-                    );
+                    // Fetch the updated status and the new SQL Server RowVersion.
+                    this.loadAppointment();
                 },
                 error: (error: unknown) => {
                     this.selectedStatus.set(appointment.status);
+
+                    const isConflict = 
+                        error instanceof HttpErrorResponse &&
+                        error.status === 409;
+
+                    this.hasStatusConflict.set(isConflict);
                     this.statusError.set(this.getStatusErrorMessage(error));
                 },
             });
@@ -179,6 +188,9 @@ export class AppointmentDetails implements OnInit {
 
                 case 404:
                     return 'This appointment could not be found.';
+
+                case 409:
+                    return 'This appointment was modified by another user. Refresh it to see the latest changes before trying again.';
 
                 case 0:
                     return 'Unable to connect to the server. Please check your connection.';

@@ -30,6 +30,7 @@ describe('AppointmentService', () => {
     endTime: '2026-10-20T09:30:00',
     status: AppointmentStatus.Scheduled,
     notes: 'Follow-up consultation',
+    rowVersion: 'AQIDBAUGBwg=',
   };
 
   beforeEach(() => {
@@ -125,6 +126,7 @@ describe('AppointmentService', () => {
     const rescheduleRequest: RescheduleAppointmentRequest = {
       startTime: '2026-10-20T10:00:00',
       endTime: '2026-10-20T10:30:00',
+      rowVersion: appointment.rowVersion,
     };
 
     service.reschedule(
@@ -150,6 +152,7 @@ describe('AppointmentService', () => {
   it('should update appointment status', () => {
     const statusRequest: UpdateAppointmentStatusRequest = {
       status: AppointmentStatus.Completed,
+      rowVersion: appointment.rowVersion,
     };
 
     service.updateStatus(
@@ -173,7 +176,7 @@ describe('AppointmentService', () => {
   });
 
   it('should delete an appointment', () => {
-    service.delete(appointment.id).subscribe((result) => {
+    service.delete(appointment.id, appointment.rowVersion).subscribe((result) => {
       expect(result).toBeNull();
     });
 

@@ -17,5 +17,7 @@ namespace MedicalOffice.Application.Appointments
         public AppointmentStatus Status { get; set; }
 
         public string? Notes { get; set; }
+
+        public string RowVersion { get; set; } = string.Empty;
     }
 }

@@ -13,6 +13,7 @@ export interface Appointment {
     endTime: string;
     status: AppointmentStatus;
     notes: string | null;
+    rowVersion: string;
 }
 
 export interface CreateAppointmentRequest {
@@ -26,10 +27,12 @@ export interface CreateAppointmentRequest {
 export interface RescheduleAppointmentRequest {
     startTime: string;
     endTime: string;
+    rowVersion: string;
 }
 
 export interface UpdateAppointmentStatusRequest {
     status: AppointmentStatus;
+    rowVersion: string;
 }
 
 export interface AppointmentFilters {
