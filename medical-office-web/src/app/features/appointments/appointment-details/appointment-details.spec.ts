@@ -1,7 +1,11 @@
 
 import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ActivatedRoute, provideRouter } from '@angular/router';
+import { 
+    ActivatedRoute, 
+    Router,
+    provideRouter
+} from '@angular/router';
 import { convertToParamMap } from '@angular/router';
 import { of, Subject, throwError } from 'rxjs';
 import { vi } from 'vitest';
@@ -60,6 +64,7 @@ describe('AppointmentDetails', () => {
     const appointmentServiceMock = {
         getById: vi.fn(),
         updateStatus: vi.fn(),
+        delete: vi.fn(),
     };
 
     const patientServiceMock = {
@@ -78,6 +83,7 @@ describe('AppointmentDetails', () => {
         patientServiceMock.getById.mockReset();
         doctorServiceMock.getById.mockReset();
         appointmentServiceMock.updateStatus.mockReset();
+        appointmentServiceMock.delete.mockReset();
 
         routeId = appointment.id;
 
@@ -117,6 +123,9 @@ describe('AppointmentDetails', () => {
 
         fixture = TestBed.createComponent(AppointmentDetails);
         component = fixture.componentInstance;
+
+        const router = TestBed.inject(Router);
+        vi.spyOn(router, 'navigate').mockResolvedValue(true);
     });
 
     it('should load and display appointment details', () => {
@@ -418,7 +427,7 @@ describe('AppointmentDetails', () => {
         appointmentServiceMock.getById
             .mockReturnValueOnce(of(appointment))
             .mockReturnValueOnce(of(updatedAppointment));
-            
+
         appointmentServiceMock.updateStatus.mockReturnValue(
             response.asObservable(),
         );
@@ -658,4 +667,91 @@ describe('AppointmentDetails', () => {
         expect(component.hasStatusConflict()).toBe(false);
         expect(component.statusError()).toBeNull();
     });
+
+    it('should open and cancel appointment deletion', () => {
+        appointmentServiceMock.getById.mockReturnValue(of(appointment));
+
+        fixture.detectChanges();
+
+        component.requestDelete();
+
+        expect(component.showDeleteConfirmation()).toBe(true);
+        expect(appointmentServiceMock.delete).not.toHaveBeenCalled();
+
+        component.cancelDelete();
+
+        expect(component.showDeleteConfirmation()).toBe(false);
+        expect(appointmentServiceMock.delete).not.toHaveBeenCalled();
+    });
+
+    it('should delete using the current RowVersion', () => {
+        appointmentServiceMock.getById.mockReturnValue(of(appointment));
+        appointmentServiceMock.delete.mockReturnValue(of(void 0));
+
+        fixture.detectChanges();
+
+        component.requestDelete();
+        component.confirmDelete();
+
+        const router = TestBed.inject(Router);
+
+        expect(router.navigate).toHaveBeenCalledWith([
+            '/appointments',
+        ]);
+
+        expect(appointmentServiceMock.delete).toHaveBeenCalledWith(
+            appointment.id,
+            appointment.rowVersion,
+        );
+
+        expect(component.showDeleteConfirmation()).toBe(false);
+        expect(component.isDeleting()).toBe(false);
+    });
+
+    it('should reject stale deletion and require a refresh', () => {
+        const latestAppointment: Appointment = {
+            ...appointment,
+            rowVersion: 'CAcGBQQDAgE=',
+        };
+
+        appointmentServiceMock.getById
+            .mockReturnValueOnce(of(appointment))
+            .mockReturnValueOnce(of(latestAppointment));
+
+        appointmentServiceMock.delete.mockReturnValue(
+            throwError(() => new HttpErrorResponse({ status: 409 })),
+        );
+
+        fixture.detectChanges();
+
+        component.requestDelete();
+        component.confirmDelete();
+        fixture.detectChanges();
+
+        expect(component.hasDeleteConflict()).toBe(true);
+        expect(component.deleteError()).toContain(
+            'modified by another user',
+        );
+
+        expect(component.showDeleteConfirmation()).toBe(false);
+        expect(appointmentServiceMock.delete).toHaveBeenCalledOnce();
+
+        // A second deletion must not be submitted with the stale token.
+        component.requestDelete();
+        component.confirmDelete();
+
+        expect(appointmentServiceMock.delete).toHaveBeenCalledOnce();
+
+        // Refresh to obtain the latest appointment and version.
+        component.loadAppointment();
+
+        expect(component.appointment()).toEqual(latestAppointment);
+        expect(component.hasDeleteConflict()).toBe(false);
+        expect(component.deleteError()).toBeNull();
+
+        component.requestDelete();
+
+        expect(component.showDeleteConfirmation()).toBe(true);
+    });
+
 });
