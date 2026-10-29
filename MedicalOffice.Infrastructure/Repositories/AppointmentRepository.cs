@@ -130,6 +130,15 @@ namespace MedicalOffice.Infrastructure.Repositories
             });
         }
 
+        public async Task<bool> ReloadAsync(
+            Appointment appointment,
+            CancellationToken cancellationToken = default)
+        {
+            await _context.Entry(appointment).ReloadAsync(cancellationToken);
+
+            return _context.Entry(appointment).State != EntityState.Detached;
+        }
+
         private async Task AcquireDoctorLockAsync(
             Guid doctorId,
             IDbContextTransaction transaction,
