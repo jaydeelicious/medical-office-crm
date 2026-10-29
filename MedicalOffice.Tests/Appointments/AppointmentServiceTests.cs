@@ -36,6 +36,22 @@ namespace MedicalOffice.Tests.Appointments
                     Func<Task<AppointmentDto>> operation,
                     CancellationToken cancellationToken) => operation());
 
+            _appointmentRepositoryMock
+                .Setup(r => r.ExecuteWithDoctorLockAsync<bool>(
+                    It.IsAny<Guid>(),
+                    It.IsAny<Func<Task<bool>>>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns((
+                    Guid doctorId,
+                    Func<Task<bool>> operation,
+                    CancellationToken cancellationToken) => operation());
+
+            _appointmentRepositoryMock
+                .Setup(r => r.ReloadAsync(
+                    It.IsAny<Appointment>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
+
             _doctorRepositoryMock = new Mock<IDoctorRepository>();
             _patientRepositoryMock = new Mock<IPatientRepository>();
 
@@ -547,6 +563,237 @@ namespace MedicalOffice.Tests.Appointments
                     It.IsAny<Func<Task<AppointmentDto>>>(),
                     It.IsAny<CancellationToken>()),
                 Times.Once);
+        }
+
+        [Fact]
+        public async Task RescheduleAsync_WhenAppointmentDisappearsBeforeReload_ReturnsFalse()
+        {
+            var appointmentId = Guid.NewGuid();
+
+            var appointment = new Appointment
+            {
+                Id = appointmentId,
+                PatientId = Guid.NewGuid(),
+                DoctorId = Guid.NewGuid(),
+                StartTime = new DateTime(2026, 11, 10, 10, 0, 0),
+                EndTime = new DateTime(2026, 11, 10, 11, 0, 0),
+                Status = AppointmentStatus.Scheduled
+            };
+
+            var request = new RescheduleAppointmentRequest
+            {
+                StartTime = new DateTime(2026, 11, 10, 14, 0, 0),
+                EndTime = new DateTime(2026, 11, 10, 15, 0, 0)
+            };
+
+            _rescheduleValidatorMock
+                .Setup(v => v.ValidateAsync(
+                    request,
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new FluentValidation.Results.ValidationResult());
+
+            _appointmentRepositoryMock
+                .Setup(r => r.GetByIdAsync(
+                    appointmentId,
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(appointment);
+
+            _appointmentRepositoryMock
+                .Setup(r => r.ReloadAsync(
+                    appointment,
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(false);
+
+            var result = await _service.RescheduleAsync(
+                appointmentId,
+                request);
+
+            result.Should().BeFalse();
+
+            _appointmentRepositoryMock.Verify(
+                r => r.HasOverlapAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<DateTime>(),
+                    It.IsAny<DateTime>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Never);
+
+            _appointmentRepositoryMock.Verify(
+                r => r.SaveChangesAsync(
+                    It.IsAny<CancellationToken>()),
+                Times.Never);
+        }
+
+        [Fact]
+        public async Task UpdateStatusAsync_WhenReactivationOverlaps_ThrowsConflictException()
+        {
+            // Arrange
+            var appointmentId = Guid.NewGuid();
+            var doctorId = Guid.NewGuid();
+
+            var appointment = new Appointment
+            {
+                Id = appointmentId,
+                PatientId = Guid.NewGuid(),
+                DoctorId = doctorId,
+                StartTime = new DateTime(2026, 11, 10, 10, 0, 0),
+                EndTime = new DateTime(2026, 11, 10, 11, 0, 0),
+                Status = AppointmentStatus.Cancelled
+            };
+
+            var request = new UpdateAppointmentStatusRequest
+            {
+                Status = AppointmentStatus.Scheduled
+            };
+
+            _statusValidatorMock
+                .Setup(v => v.ValidateAsync(
+                    request,
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new FluentValidation.Results.ValidationResult());
+
+            _appointmentRepositoryMock
+                .Setup(r => r.GetByIdAsync(
+                    appointmentId,
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(appointment);
+
+            _appointmentRepositoryMock
+                .Setup(r => r.HasOverlapAsync(
+                    doctorId,
+                    appointment.StartTime,
+                    appointment.EndTime,
+                    appointmentId,
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
+
+            // Act
+            Func<Task> act = () =>
+                _service.UpdateStatusAsync(appointmentId, request);
+
+            // Assert
+            await act.Should()
+                .ThrowAsync<ConflictException>();
+
+            appointment.Status.Should().Be(AppointmentStatus.Cancelled);
+
+            _appointmentRepositoryMock.Verify(
+                r => r.SaveChangesAsync(
+                    It.IsAny<CancellationToken>()),
+                Times.Never);
+        }
+
+        [Fact]
+        public async Task UpdateStatusAsync_WhenReactivationHasNoOverlap_UpdatesStatus()
+        {
+            // Arrange
+            var appointmentId = Guid.NewGuid();
+            var doctorId = Guid.NewGuid();
+
+            var appointment = new Appointment
+            {
+                Id = appointmentId,
+                PatientId = Guid.NewGuid(),
+                DoctorId = doctorId,
+                StartTime = new DateTime(2026, 11, 10, 10, 0, 0),
+                EndTime = new DateTime(2026, 11, 10, 11, 0, 0),
+                Status = AppointmentStatus.Cancelled
+            };
+
+            var request = new UpdateAppointmentStatusRequest
+            {
+                Status = AppointmentStatus.Scheduled
+            };
+
+            _statusValidatorMock
+                .Setup(v => v.ValidateAsync(
+                    request,
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new FluentValidation.Results.ValidationResult());
+
+            _appointmentRepositoryMock
+                .Setup(r => r.GetByIdAsync(
+                    appointmentId,
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(appointment);
+
+            _appointmentRepositoryMock
+                .Setup(r => r.HasOverlapAsync(
+                    doctorId,
+                    appointment.StartTime,
+                    appointment.EndTime,
+                    appointmentId,
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(false);
+
+            // Act
+            var result = await _service.UpdateStatusAsync(
+                appointmentId,
+                request);
+
+            // Assert
+            result.Should().BeTrue();
+
+            appointment.Status.Should().Be(AppointmentStatus.Scheduled);
+
+            _appointmentRepositoryMock.Verify(
+                r => r.SaveChangesAsync(
+                    It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task UpdateStatusAsync_WhenCancelling_DoesNotCheckOverlap()
+        {
+            // Arrange
+            var appointmentId = Guid.NewGuid();
+
+            var appointment = new Appointment
+            {
+                Id = appointmentId,
+                PatientId = Guid.NewGuid(),
+                DoctorId = Guid.NewGuid(),
+                StartTime = new DateTime(2026, 11, 10, 10, 0, 0),
+                EndTime = new DateTime(2026, 11, 10, 11, 0, 0),
+                Status = AppointmentStatus.Scheduled
+            };
+
+            var request = new UpdateAppointmentStatusRequest
+            {
+                Status = AppointmentStatus.Cancelled
+            };
+
+            _statusValidatorMock
+                .Setup(v => v.ValidateAsync(
+                    request,
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new FluentValidation.Results.ValidationResult());
+
+            _appointmentRepositoryMock
+                .Setup(r => r.GetByIdAsync(
+                    appointmentId,
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(appointment);
+
+            // Act
+            var result = await _service.UpdateStatusAsync(
+                appointmentId,
+                request);
+
+            // Assert
+            result.Should().BeTrue();
+
+            appointment.Status.Should().Be(AppointmentStatus.Cancelled);
+
+            _appointmentRepositoryMock.Verify(
+                r => r.HasOverlapAsync(
+                    It.IsAny<Guid>(),
+                    It.IsAny<DateTime>(),
+                    It.IsAny<DateTime>(),
+                    It.IsAny<Guid?>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Never);
         }
     }
 }

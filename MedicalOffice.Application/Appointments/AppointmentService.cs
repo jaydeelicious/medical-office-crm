@@ -137,37 +137,52 @@ namespace MedicalOffice.Application.Appointments
                 request,
                 cancellationToken);
 
-            var appointment =
-                await _appointmentRepository.GetByIdAsync(
-                    id,
-                    cancellationToken);
+            var appointment = await _appointmentRepository.GetByIdAsync(
+                id,
+                cancellationToken);
 
             if (appointment is null)
             {
                 return false;
             }
 
-            var hasOverlap = 
-                await _appointmentRepository.HasOverlapAsync(
-                    appointment.DoctorId,
-                    request.StartTime,
-                    request.EndTime,
-                    excludeAppointmentId: appointment.Id,
-                    cancellationToken: cancellationToken);
+            return await _appointmentRepository.ExecuteWithDoctorLockAsync(
+                appointment.DoctorId,
+                async () =>
+                {
+                    // Reload inside the protected transaction.
+                    if (!await _appointmentRepository.ReloadAsync(
+                        appointment,
+                        cancellationToken))
+                    {
+                        return false;
+                    }
 
-            if (hasOverlap)
-            {
-                throw new ConflictException(
-                    "The doctor already has an appointment during this time.");
-            }
+                    var currentAppointment = appointment;
 
-            appointment.StartTime = request.StartTime;
-            appointment.EndTime = request.EndTime;
+                    var hasOverlap = 
+                        await _appointmentRepository.HasOverlapAsync(
+                            currentAppointment.DoctorId,
+                            request.StartTime,
+                            request.EndTime,
+                            excludeAppointmentId: appointment.Id,
+                            cancellationToken: cancellationToken);
 
-            await _appointmentRepository.SaveChangesAsync(
+                    if (hasOverlap)
+                    {
+                        throw new ConflictException(
+                            "The doctor already has an appointment during this time.");
+                    }
+
+                    currentAppointment.StartTime = request.StartTime;
+                    currentAppointment.EndTime = request.EndTime;
+
+                    await _appointmentRepository.SaveChangesAsync(
+                        cancellationToken);
+
+                    return true;
+                },
                 cancellationToken);
-
-            return true;
         }
 
         public async Task<bool> UpdateStatusAsync(
@@ -189,12 +204,44 @@ namespace MedicalOffice.Application.Appointments
                 return false;
             }
 
-            appointment.Status = request.Status;
+            return await _appointmentRepository.ExecuteWithDoctorLockAsync(
+                appointment.DoctorId,
+                async () =>
+                {
+                    if (!await _appointmentRepository.ReloadAsync(
+                        appointment,
+                        cancellationToken))
+                    {
+                        return false;
+                    }
 
-            await _appointmentRepository.SaveChangesAsync(
+                    var isReactivation =
+                        appointment.Status == AppointmentStatus.Cancelled &&
+                        request.Status != AppointmentStatus.Cancelled;
+
+                    if (isReactivation)
+                    {
+                        var hasOverlap =
+                            await _appointmentRepository.HasOverlapAsync(
+                                appointment.DoctorId,
+                                appointment.StartTime,
+                                appointment.EndTime,
+                                excludeAppointmentId: appointment.Id,
+                                cancellationToken: cancellationToken);
+
+                        if (hasOverlap)
+                        {
+                            throw new ConflictException("The doctor already has an appointment during this time.");
+                        }
+                    }
+
+                    appointment.Status = request.Status;
+
+                    await _appointmentRepository.SaveChangesAsync(cancellationToken);
+
+                    return true;
+                },
                 cancellationToken);
-
-            return true;
         }
 
         public async Task<bool> DeleteAsync(

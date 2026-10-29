@@ -33,5 +33,9 @@ namespace MedicalOffice.Application.Abstractions
             Guid doctorId,
             Func<Task<T>> operation,
             CancellationToken cancellationToken = default);
+
+        Task<bool> ReloadAsync(
+            Appointment appointment,
+            CancellationToken cancellationToken = default);
     }
 }
