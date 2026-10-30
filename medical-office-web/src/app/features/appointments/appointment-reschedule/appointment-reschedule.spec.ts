@@ -200,18 +200,24 @@ describe('AppointmentReschedule', () => {
         expect(component.isSubmitting()).toBe(false);
     });
 
-    it('should handle appointment overlap conflicts', () => {
+    it('should allow retry after an appointment overlap conflict', () => {
         appointmentServiceMock.getById.mockReturnValue(of(appointment));
 
-        appointmentServiceMock.reschedule.mockReturnValue(
-            throwError(
-                () => new HttpErrorResponse({ status: 409 }),
-            ),
-        );
+        appointmentServiceMock.reschedule
+            .mockReturnValueOnce(
+                throwError(() => new HttpErrorResponse({
+                    status: 409,
+                    error: {
+                        code: 'APPOINTMENT_OVERLAP',
+                    },
+                })),
+            )
+            .mockReturnValueOnce(of(void 0));
 
         fixture.detectChanges();
 
         component.form.patchValue({
+            date: '2026-10-21',
             startTime: '10:00',
             endTime: '10:30',
         });
@@ -219,20 +225,41 @@ describe('AppointmentReschedule', () => {
         component.onSubmit();
         fixture.detectChanges();
 
+        expect(component.hasConflict()).toBe(false);
         expect(component.submitError()).toContain(
-            'the selected time is no longer available',
+            'The doctor already has an appointment',
         );
-
         expect(component.isSubmitting()).toBe(false);
-        expect(component.form.controls.startTime.value).toBe('10:00');
 
-        const callsBeforeRetry =
-            appointmentServiceMock.reschedule.mock.calls.length;
+        const submitButton = fixture.nativeElement.querySelector(
+            '.submit-button',
+        ) as HTMLButtonElement;
+
+        expect(submitButton.disabled).toBe(false);
+
+        // User chooses a different available time.
+        component.form.patchValue({
+            startTime: '11:00',
+            endTime: '11:30',
+        });
 
         component.onSubmit();
 
-        expect(appointmentServiceMock.reschedule)
-            .toHaveBeenCalledTimes(callsBeforeRetry);
+        expect(appointmentServiceMock.reschedule).toHaveBeenCalledTimes(2);
+
+        expect(appointmentServiceMock.reschedule).toHaveBeenLastCalledWith(
+            appointment.id,
+            {
+                startTime: '2026-10-21T11:00:00',
+                endTime: '2026-10-21T11:30:00',
+                rowVersion: appointment.rowVersion,
+            },
+        );
+
+        expect(router.navigate).toHaveBeenCalledWith([
+            '/appointments',
+            appointment.id,
+        ]);
     });
 
     it('should display backend validation errors', () => {
@@ -395,7 +422,11 @@ describe('AppointmentReschedule', () => {
 
         appointmentServiceMock.reschedule
             .mockReturnValueOnce(
-                throwError(() => new HttpErrorResponse({ status: 409 })),
+                throwError(() => new HttpErrorResponse({ 
+                                    status: 409,
+                                    error: {
+                                        code: 'STALE_APPOINTMENT',
+                                    } })),
             )
             .mockReturnValueOnce(of(void 0));
 
@@ -456,7 +487,12 @@ describe('AppointmentReschedule', () => {
             .mockReturnValueOnce(of(refreshedAppointment));
 
         appointmentServiceMock.reschedule.mockReturnValue(
-            throwError(() => new HttpErrorResponse({ status: 409 })),
+            throwError(() => new HttpErrorResponse({ 
+                                status: 409,
+                                error: {
+                                    code: 'STALE_APPOINTMENT',
+                                },
+                            })),
         );
 
         fixture.detectChanges();
@@ -490,7 +526,12 @@ describe('AppointmentReschedule', () => {
             );
 
         appointmentServiceMock.reschedule.mockReturnValue(
-            throwError(() => new HttpErrorResponse({ status: 409 })),
+            throwError(() => new HttpErrorResponse({ 
+                                status: 409,
+                                error: {
+                                    code: 'STALE_APPOINTMENT',
+                                },
+                            })),
         );
 
         fixture.detectChanges();
@@ -524,5 +565,77 @@ describe('AppointmentReschedule', () => {
         ) as HTMLButtonElement;
 
         expect(submitButton.disabled).toBe(true);
+    });
+
+    it('should handle unknown conflicts without requiring refresh', () => {
+        appointmentServiceMock.getById.mockReturnValue(of(appointment));
+
+        appointmentServiceMock.reschedule.mockReturnValue(
+            throwError(() => new HttpErrorResponse({
+                status: 409,
+                error: {
+                    title: 'Conflict',
+                    status: 409,
+                },
+            })),
+        );
+
+        fixture.detectChanges();
+
+        component.onSubmit();
+        fixture.detectChanges();
+
+        expect(component.hasConflict()).toBe(false);
+
+        expect(component.submitError()).toContain(
+            'Unable to reschedule due to a conflict',
+        );
+
+        expect(component.isSubmitting()).toBe(false);
+
+        const submitButton = fixture.nativeElement.querySelector(
+            '.submit-button',
+        ) as HTMLButtonElement;
+
+        expect(submitButton.disabled).toBe(false);
+    });
+
+    it('should require refresh after a stale appointment conflict', () => {
+        appointmentServiceMock.getById.mockReturnValue(of(appointment));
+
+        appointmentServiceMock.reschedule.mockReturnValue(
+            throwError(() => new HttpErrorResponse({
+                status: 409,
+                error: {
+                    code: 'STALE_APPOINTMENT',
+                },
+            })),
+        );
+
+        fixture.detectChanges();
+
+        component.onSubmit();
+        fixture.detectChanges();
+
+        expect(component.hasConflict()).toBe(true);
+
+        expect(component.submitError()).toContain(
+            'modified by another user',
+        );
+
+        const submitButton = fixture.nativeElement.querySelector(
+            '.submit-button',
+        ) as HTMLButtonElement;
+
+        const refreshButton = fixture.nativeElement.querySelector(
+            '.refresh-appointment-button',
+        ) as HTMLButtonElement;
+
+        expect(submitButton.disabled).toBe(true);
+        expect(refreshButton).not.toBeNull();
+
+        component.onSubmit();
+
+        expect(appointmentServiceMock.reschedule).toHaveBeenCalledOnce();
     });
 });
