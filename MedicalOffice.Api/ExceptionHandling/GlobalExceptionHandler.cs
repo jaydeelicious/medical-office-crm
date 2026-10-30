@@ -63,8 +63,28 @@ namespace MedicalOffice.Api.ExceptionHandling
             {
                 Status = statusCode,
                 Title = GetTitle(statusCode),
-                Detail = exception.Message
+                Detail = exception switch
+                {
+                    DbUpdateConcurrencyException =>
+                        "The appointment was modified by another user. Refresh and try again.",
+
+                    _ when statusCode == StatusCodes.Status500InternalServerError =>
+                        "An unexpected server error occurred.",
+
+                    _ => exception.Message
+                }
             };
+
+            switch (exception)
+            {
+                case ConflictException conflictException:
+                    problemDetails.Extensions["code"] = conflictException.Code;
+                    break;
+
+                case DbUpdateConcurrencyException:
+                    problemDetails.Extensions["code"] = ConflictCodes.StaleAppointment;
+                    break;
+            }
 
             httpContext.Response.StatusCode = statusCode;
 
