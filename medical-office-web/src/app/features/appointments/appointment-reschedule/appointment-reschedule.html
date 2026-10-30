@@ -69,7 +69,16 @@
         }
 
         @if (submitError(); as message) {
-        <app-error-message [message]="message" />
+        <div class="submit-error">
+            <app-error-message [message]="message" />
+
+            @if (hasConflict()) {
+            <button type="button" class="refresh-appointment-button" [disabled]="isLoading() || isSubmitting()"
+                (click)="refreshAfterConflict()">
+                Refresh appointment
+            </button>
+            }
+        </div>
         }
 
         @if (validationErrors().length > 0) {
@@ -87,7 +96,12 @@
                 Cancel
             </button>
 
-            <button type="submit" class="submit-button" [disabled]="isSubmitting() || isLoading() || form.invalid">
+            <button type="submit" class="submit-button" [disabled]="
+        isSubmitting() ||
+        isLoading() ||
+        hasConflict() ||
+        form.invalid
+    ">
                 {{ isSubmitting() ? 'Saving...' : 'Save new time' }}
             </button>
         </div>

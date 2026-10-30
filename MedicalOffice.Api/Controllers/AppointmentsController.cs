@@ -108,19 +108,32 @@ namespace MedicalOffice.Api.Controllers
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> Delete(
             Guid id,
+            [FromHeader(Name = "If-Match")] string? ifMatch,
             CancellationToken cancellationToken)
         {
+
+            if (string.IsNullOrWhiteSpace(ifMatch) ||
+                ifMatch.Length < 2 ||
+                !ifMatch.StartsWith('"') ||
+                !ifMatch.EndsWith('"') ||
+                !AppointmentConcurrency.IsValidRowVersion(
+                    ifMatch[1..^1]))
+            {
+                return BadRequest(new ProblemDetails
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    Title = "Invalid concurrency token",
+                    Detail = "A valid quoted If-Match row version is required."
+                });
+            }
+
             var deleted =
                 await _appointmentService.DeleteAsync(
                     id,
+                    ifMatch[1..^1],
                     cancellationToken);
 
-            if (!deleted)
-            {
-                return NotFound();
-            }
-
-            return NoContent();
+            return deleted ? NoContent() : NotFound();
         }
     }
 }

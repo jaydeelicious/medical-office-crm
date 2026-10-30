@@ -11,6 +11,10 @@ namespace MedicalOffice.Application.Appointments
         {
             RuleFor(x => x.Status)
                 .IsInEnum();
+
+            RuleFor(x => x.RowVersion)
+                .Must(AppointmentConcurrency.IsValidRowVersion)
+                .WithMessage("A valid appointment row version is required.");
         }
     }
 }

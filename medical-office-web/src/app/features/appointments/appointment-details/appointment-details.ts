@@ -8,7 +8,7 @@ import {
     signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin, map, switchMap, finalize } from 'rxjs';
 
 import { Appointment, AppointmentStatus } from '../appointment.model';
@@ -20,6 +20,7 @@ import { getAppointmentStatusLabel } from '../appointment-status.utils';
 
 import { LoadingIndicator } from '../../../shared/components/loading-indicator/loading-indicator';
 import { ErrorMessage } from '../../../shared/components/error-message/error-message';
+import { ConfirmDialog } from '../../../shared/components/confirm-dialog/confirm-dialog';
 
 import { FormsModule } from '@angular/forms';
 
@@ -31,6 +32,7 @@ import { FormsModule } from '@angular/forms';
         FormsModule,
         LoadingIndicator,
         ErrorMessage,
+        ConfirmDialog,
     ],
     templateUrl: './appointment-details.html',
     styleUrl: './appointment-details.scss',
@@ -41,6 +43,7 @@ export class AppointmentDetails implements OnInit {
     private readonly doctorService = inject(DoctorService);
     private readonly route = inject(ActivatedRoute);
     private readonly destroyRef = inject(DestroyRef);
+    private readonly router = inject(Router);
 
     readonly appointment = signal<Appointment | null>(null);
     readonly patientName = signal('');
@@ -58,6 +61,12 @@ export class AppointmentDetails implements OnInit {
 
     readonly isUpdatingStatus = signal(false);
     readonly statusError = signal<string | null>(null);
+    readonly hasStatusConflict = signal(false);
+
+    readonly showDeleteConfirmation = signal(false);
+    readonly isDeleting = signal(false);
+    readonly deleteError = signal<string | null>(null);
+    readonly hasDeleteConflict = signal(false);
 
     readonly statusOptions = [
         { value: AppointmentStatus.Scheduled, label: 'Scheduled' },
@@ -82,6 +91,11 @@ export class AppointmentDetails implements OnInit {
         }
 
         this.isLoading.set(true);
+        this.showDeleteConfirmation.set(false);
+        this.hasDeleteConflict.set(false);
+        this.deleteError.set(null);
+        this.hasStatusConflict.set(false);
+        this.statusError.set(null);
         this.errorMessage.set(null);
         this.canRetry.set(false);
         this.appointment.set(null);
@@ -145,24 +159,127 @@ export class AppointmentDetails implements OnInit {
         this.statusError.set(null);
 
         this.appointmentService
-            .updateStatus(appointment.id, { status: newStatus })
+            .updateStatus(appointment.id, { 
+                status: newStatus,
+                rowVersion: appointment.rowVersion,
+            })
             .pipe(
                 finalize(() => this.isUpdatingStatus.set(false)),
                 takeUntilDestroyed(this.destroyRef),
             )
             .subscribe({
                 next: () => {
-                    this.appointment.update((current) => 
-                        current
-                        ? { ...current, status: newStatus }
-                        : null,
-                    );
+                    // Fetch the updated status and the new SQL Server RowVersion.
+                    this.loadAppointment();
                 },
                 error: (error: unknown) => {
                     this.selectedStatus.set(appointment.status);
+
+                    const isConflict = 
+                        error instanceof HttpErrorResponse &&
+                        error.status === 409;
+
+                    this.hasStatusConflict.set(isConflict);
                     this.statusError.set(this.getStatusErrorMessage(error));
                 },
             });
+    }
+
+    requestDelete(): void {
+        if (
+            !this.appointment() ||
+            this.isLoading() ||
+            this.isDeleting() ||
+            this.isUpdatingStatus() ||
+            this.hasDeleteConflict()
+        ) {
+            return;
+        }
+
+        this.deleteError.set(null);
+        this.showDeleteConfirmation.set(true);
+    }
+
+    cancelDelete(): void {
+        if (this.isDeleting()) {
+            return;
+        }
+
+        this.showDeleteConfirmation.set(false);
+    }
+
+    confirmDelete(): void {
+        const appointment = this.appointment();
+
+        if (
+            !appointment || 
+            !this.showDeleteConfirmation() ||
+            this.isDeleting() ||
+            this.isLoading() ||
+            this.isUpdatingStatus() ||
+            this.hasDeleteConflict()
+        ) {
+            return;
+        }
+
+        this.isDeleting.set(true);
+        this.deleteError.set(null);
+
+        this.appointmentService
+            .delete(appointment.id, appointment.rowVersion)
+            .pipe(
+                finalize(() => this.isDeleting.set(false)),
+                takeUntilDestroyed(this.destroyRef),
+            )
+            .subscribe({
+                next: () => {
+                    this.showDeleteConfirmation.set(false);
+                    void this.router.navigate(['/appointments']);
+                },
+                error: (error: unknown) => {
+                    this.showDeleteConfirmation.set(false);
+
+                    if (
+                        error instanceof HttpErrorResponse &&
+                        error.status === 409
+                    ) {
+                        this.hasDeleteConflict.set(true);
+                    }
+
+                    this.deleteError.set(
+                        this.getDeleteErrorMessage(error),
+                    );
+                },
+            });
+    }
+
+    private getDeleteErrorMessage(error: unknown): string {
+        if (error instanceof HttpErrorResponse) {
+            switch (error.status) {
+                case 400:
+                    return 'The deletion request is invalid. Refresh the appointment and try again.';
+
+                case 401:
+                    return 'Your session has expired. Please sign in again.';
+
+                case 403:
+                    return 'You do not have permission to delete appointments.';
+
+                case 404:
+                    return 'This appointment could not be found. It may have already been deleted.';
+
+                case 409:
+                    return 'This appointment was modified by another user. Refresh it before trying to delete it again.';
+
+                case 0:
+                    return 'Unable to connect to the server. Please check your connection.';
+
+                default:
+                    return 'Unable to delete the appointment. Please try again.';
+            }
+        }
+
+        return 'An unexpected error occurred while deleting the appointment.';
     }
 
     private getStatusErrorMessage(error: unknown): string {
@@ -179,6 +296,9 @@ export class AppointmentDetails implements OnInit {
 
                 case 404:
                     return 'This appointment could not be found.';
+
+                case 409:
+                    return 'This appointment was modified by another user. Refresh it to see the latest changes before trying again.';
 
                 case 0:
                     return 'Unable to connect to the server. Please check your connection.';

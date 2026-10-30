@@ -19,5 +19,7 @@ namespace MedicalOffice.Domain.Entities
         public AppointmentStatus Status { get; set; } = AppointmentStatus.Scheduled;
 
         public string? Notes { get; set; }
+
+        public byte[] RowVersion { get; set; } = [];
     }
 }

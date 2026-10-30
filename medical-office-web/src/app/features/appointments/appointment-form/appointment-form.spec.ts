@@ -48,6 +48,7 @@ describe('AppointmentForm', () => {
     endTime: '2026-10-20T09:30:00',
     status: AppointmentStatus.Scheduled,
     notes: 'Follow-up consultation',
+    rowVersion: 'AQIDBAUGBwg=',
   };
 
   const appointmentServiceMock = {

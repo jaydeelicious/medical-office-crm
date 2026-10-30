@@ -25,6 +25,14 @@ namespace MedicalOffice.Infrastructure.Persistence
 
             modelBuilder.ApplyConfigurationsFromAssembly(
                 typeof(MedicalOfficeDbContext).Assembly);
+
+            if (Database.ProviderName == "Microsoft.EntityFrameworkCore.Sqlite")
+            {
+                modelBuilder.Entity<Appointment>()
+                    .Property(a => a.RowVersion)
+                    .IsConcurrencyToken()
+                    .ValueGeneratedNever();
+            }
         }
     }
 }

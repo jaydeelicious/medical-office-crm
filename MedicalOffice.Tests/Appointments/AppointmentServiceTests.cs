@@ -339,13 +339,15 @@ namespace MedicalOffice.Tests.Appointments
                 DoctorId = doctorId,
                 StartTime = new DateTime(2026, 10, 10, 10, 0, 0),
                 EndTime = new DateTime(2026, 10, 10, 11, 0, 0),
-                Status = AppointmentStatus.Scheduled
+                Status = AppointmentStatus.Scheduled,
+                RowVersion = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 }
             };
 
             var request = new RescheduleAppointmentRequest
             {
                 StartTime = new DateTime(2026, 10, 10, 14, 0, 0),
-                EndTime = new DateTime(2026, 10, 10, 15, 0, 0)
+                EndTime = new DateTime(2026, 10, 10, 15, 0, 0),
+                RowVersion = Convert.ToBase64String(appointment.RowVersion)
             };
 
             _rescheduleValidatorMock
@@ -405,13 +407,15 @@ namespace MedicalOffice.Tests.Appointments
                 DoctorId = doctorId,
                 StartTime = new DateTime(2026, 10, 10, 10, 0, 0),
                 EndTime = new DateTime(2026, 10, 10, 11, 0, 0),
-                Status = AppointmentStatus.Scheduled
+                Status = AppointmentStatus.Scheduled,
+                RowVersion = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 }
             };
 
             var request = new RescheduleAppointmentRequest
             {
                 StartTime = new DateTime(2026, 10, 10, 14, 0, 0),
-                EndTime = new DateTime(2026, 10, 10, 15, 0, 0)
+                EndTime = new DateTime(2026, 10, 10, 15, 0, 0),
+                RowVersion = Convert.ToBase64String(appointment.RowVersion)
             };
 
             _rescheduleValidatorMock
@@ -461,7 +465,8 @@ namespace MedicalOffice.Tests.Appointments
             var request = new RescheduleAppointmentRequest
             {
                 StartTime = new DateTime(2026, 10, 10, 14, 0, 0),
-                EndTime = new DateTime(2026, 10, 10, 15, 0, 0)
+                EndTime = new DateTime(2026, 10, 10, 15, 0, 0),
+                RowVersion = Convert.ToBase64String(new byte[8])
             };
 
             _rescheduleValidatorMock
@@ -577,13 +582,15 @@ namespace MedicalOffice.Tests.Appointments
                 DoctorId = Guid.NewGuid(),
                 StartTime = new DateTime(2026, 11, 10, 10, 0, 0),
                 EndTime = new DateTime(2026, 11, 10, 11, 0, 0),
-                Status = AppointmentStatus.Scheduled
+                Status = AppointmentStatus.Scheduled,
+                RowVersion = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 }
             };
 
             var request = new RescheduleAppointmentRequest
             {
                 StartTime = new DateTime(2026, 11, 10, 14, 0, 0),
-                EndTime = new DateTime(2026, 11, 10, 15, 0, 0)
+                EndTime = new DateTime(2026, 11, 10, 15, 0, 0),
+                RowVersion = Convert.ToBase64String(appointment.RowVersion)
             };
 
             _rescheduleValidatorMock
@@ -639,12 +646,14 @@ namespace MedicalOffice.Tests.Appointments
                 DoctorId = doctorId,
                 StartTime = new DateTime(2026, 11, 10, 10, 0, 0),
                 EndTime = new DateTime(2026, 11, 10, 11, 0, 0),
-                Status = AppointmentStatus.Cancelled
+                Status = AppointmentStatus.Cancelled, 
+                RowVersion = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 }
             };
 
             var request = new UpdateAppointmentStatusRequest
             {
-                Status = AppointmentStatus.Scheduled
+                Status = AppointmentStatus.Scheduled,
+                RowVersion = Convert.ToBase64String(appointment.RowVersion)
             };
 
             _statusValidatorMock
@@ -698,12 +707,14 @@ namespace MedicalOffice.Tests.Appointments
                 DoctorId = doctorId,
                 StartTime = new DateTime(2026, 11, 10, 10, 0, 0),
                 EndTime = new DateTime(2026, 11, 10, 11, 0, 0),
-                Status = AppointmentStatus.Cancelled
+                Status = AppointmentStatus.Cancelled,
+                RowVersion = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 }
             };
 
             var request = new UpdateAppointmentStatusRequest
             {
-                Status = AppointmentStatus.Scheduled
+                Status = AppointmentStatus.Scheduled,
+                RowVersion = Convert.ToBase64String(appointment.RowVersion)
             };
 
             _statusValidatorMock
@@ -756,12 +767,14 @@ namespace MedicalOffice.Tests.Appointments
                 DoctorId = Guid.NewGuid(),
                 StartTime = new DateTime(2026, 11, 10, 10, 0, 0),
                 EndTime = new DateTime(2026, 11, 10, 11, 0, 0),
-                Status = AppointmentStatus.Scheduled
+                Status = AppointmentStatus.Scheduled,
+                RowVersion = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 }
             };
 
             var request = new UpdateAppointmentStatusRequest
             {
-                Status = AppointmentStatus.Cancelled
+                Status = AppointmentStatus.Cancelled,
+                RowVersion = Convert.ToBase64String(appointment.RowVersion)
             };
 
             _statusValidatorMock

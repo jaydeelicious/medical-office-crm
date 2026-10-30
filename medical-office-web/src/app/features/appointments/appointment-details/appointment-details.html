@@ -16,24 +16,51 @@
 
     <div class="details-actions">
         <a class="reschedule-button" [routerLink]="[
-      '/appointments',
-      appointment.id,
-      'reschedule'
-    ]">
+            '/appointments',
+            appointment.id,
+            'reschedule'
+        ]">
             Reschedule appointment
         </a>
+
+        <button type="button" class="delete-appointment-button" [disabled]="
+            isDeleting() ||
+            isUpdatingStatus() ||
+            isLoading() ||
+            hasDeleteConflict() ||
+            hasStatusConflict()
+        " (click)="requestDelete()">
+            Delete appointment
+        </button>
     </div>
 
+    @if (deleteError(); as message) {
+    <div class="delete-error">
+        <app-error-message [message]="message" />
+
+        @if (hasDeleteConflict()) {
+        <button type="button" class="refresh-delete-button" [disabled]="isLoading() || isDeleting()"
+            (click)="loadAppointment()">
+            Refresh appointment
+        </button>
+        }
+    </div>
+    }
 
     <div class="status-management">
         <h3>Change appointment status</h3>
 
         <div class="status-controls">
             <div class="status-select">
-                <label for="appointmentStatus">New status</label>
+                <label for="appointmentStatus">
+                    New status
+                </label>
 
                 <select id="appointmentStatus" [ngModel]="selectedStatus()" (ngModelChange)="selectedStatus.set($event)"
-                    [disabled]="isUpdatingStatus()">
+                    [disabled]="
+                            isUpdatingStatus() ||
+                            hasStatusConflict()
+                        ">
                     @for (option of statusOptions; track option.value) {
                     <option [ngValue]="option.value">
                         {{ option.label }}
@@ -43,20 +70,34 @@
             </div>
 
             <button type="button" class="save-status-button" [disabled]="
-        isUpdatingStatus() ||
-        selectedStatus() === appointment.status
-      " (click)="updateStatus()">
-                {{ isUpdatingStatus() ? 'Saving...' : 'Update status' }}
+                        isLoading() ||
+                        isUpdatingStatus() ||
+                        hasStatusConflict() ||
+                        selectedStatus() === appointment.status
+                    " (click)="updateStatus()">
+                {{
+                isUpdatingStatus()
+                ? 'Saving...'
+                : 'Update status'
+                }}
             </button>
         </div>
 
         @if (statusError(); as message) {
         <div class="status-error">
             <app-error-message [message]="message" />
+
+            @if (hasStatusConflict()) {
+            <button type="button" class="refresh-appointment-button" [disabled]="
+                                isLoading() ||
+                                isUpdatingStatus()
+                            " (click)="loadAppointment()">
+                Refresh appointment
+            </button>
+            }
         </div>
         }
     </div>
-
 
     <div class="details-card">
         <h2>Appointment information</h2>
@@ -106,5 +147,8 @@
             </div>
         </dl>
     </div>
+    <app-confirm-dialog [open]="showDeleteConfirmation()" title="Delete appointment"
+        message="Are you sure you want to permanently delete this appointment?" confirmLabel="Delete appointment"
+        [isProcessing]="isDeleting()" (confirm)="confirmDelete()" (cancelled)="cancelDelete()" />
     }
 </section>

@@ -30,6 +30,7 @@ describe('AppointmentReschedule', () => {
         endTime: '2026-10-20T09:30:00',
         status: AppointmentStatus.Scheduled,
         notes: 'Follow-up consultation',
+        rowVersion: 'AQIDBAUGBwg=',
     };
 
     const appointmentServiceMock = {
@@ -163,6 +164,7 @@ describe('AppointmentReschedule', () => {
             {
                 startTime: '2026-10-21T10:00:00',
                 endTime: '2026-10-21T10:30:00',
+                rowVersion: appointment.rowVersion,
             },
         );
 
@@ -218,11 +220,19 @@ describe('AppointmentReschedule', () => {
         fixture.detectChanges();
 
         expect(component.submitError()).toContain(
-            'already has an appointment',
+            'the selected time is no longer available',
         );
 
         expect(component.isSubmitting()).toBe(false);
         expect(component.form.controls.startTime.value).toBe('10:00');
+
+        const callsBeforeRetry =
+            appointmentServiceMock.reschedule.mock.calls.length;
+
+        component.onSubmit();
+
+        expect(appointmentServiceMock.reschedule)
+            .toHaveBeenCalledTimes(callsBeforeRetry);
     });
 
     it('should display backend validation errors', () => {
@@ -366,8 +376,153 @@ describe('AppointmentReschedule', () => {
             {
                 startTime: '2026-10-21T23:00:00',
                 endTime: '2026-10-21T23:45:00',
+                rowVersion: appointment.rowVersion,
             },
         );
     });
 
+    it('should refresh the RowVersion after a concurrency conflict', () => {
+        const refreshedAppointment: Appointment = {
+            ...appointment,
+            startTime: '2026-10-20T11:00:00',
+            endTime: '2026-10-20T11:30:00',
+            rowVersion: 'CAcGBQQDAgE=',
+        };
+
+        appointmentServiceMock.getById
+            .mockReturnValueOnce(of(appointment))
+            .mockReturnValueOnce(of(refreshedAppointment));
+
+        appointmentServiceMock.reschedule
+            .mockReturnValueOnce(
+                throwError(() => new HttpErrorResponse({ status: 409 })),
+            )
+            .mockReturnValueOnce(of(void 0));
+
+        fixture.detectChanges();
+
+        component.form.patchValue({
+            date: '2026-10-21',
+            startTime: '14:00',
+            endTime: '14:30',
+        });
+
+        // Initial submission uses the stale token.
+        component.onSubmit();
+
+        expect(appointmentServiceMock.reschedule).toHaveBeenCalledWith(
+            appointment.id,
+            {
+                startTime: '2026-10-21T14:00:00',
+                endTime: '2026-10-21T14:30:00',
+                rowVersion: appointment.rowVersion,
+            },
+        );
+
+        expect(component.hasConflict()).toBe(true);
+
+        // The user refreshes the appointment.
+        component.refreshAfterConflict();
+
+        expect(appointmentServiceMock.getById).toHaveBeenCalledTimes(2);
+        expect(component.appointment()).toEqual(refreshedAppointment);
+        expect(component.hasConflict()).toBe(false);
+
+        // Retry using the latest token.
+        component.onSubmit();
+
+        expect(appointmentServiceMock.reschedule).toHaveBeenCalledTimes(2);
+
+        expect(appointmentServiceMock.reschedule).toHaveBeenLastCalledWith(
+            appointment.id,
+            {
+                startTime: '2026-10-21T14:00:00',
+                endTime: '2026-10-21T14:30:00',
+                rowVersion: refreshedAppointment.rowVersion,
+            },
+        );
+    });
+    
+    it('should preserve proposed date and time when refreshing after a conflict', () => {
+        const refreshedAppointment: Appointment = {
+            ...appointment,
+            startTime: '2026-10-22T09:00:00',
+            endTime: '2026-10-22T09:30:00',
+            rowVersion: 'CAcGBQQDAgE=',
+        };
+
+        appointmentServiceMock.getById
+            .mockReturnValueOnce(of(appointment))
+            .mockReturnValueOnce(of(refreshedAppointment));
+
+        appointmentServiceMock.reschedule.mockReturnValue(
+            throwError(() => new HttpErrorResponse({ status: 409 })),
+        );
+
+        fixture.detectChanges();
+
+        const proposedTime = {
+            date: '2026-10-21',
+            startTime: '14:00',
+            endTime: '14:30',
+        };
+
+        component.form.patchValue(proposedTime);
+
+        component.onSubmit();
+
+        expect(component.hasConflict()).toBe(true);
+
+        component.refreshAfterConflict();
+
+        expect(component.form.getRawValue()).toEqual(proposedTime);
+
+        expect(component.appointment()).toEqual(refreshedAppointment);
+        expect(component.hasConflict()).toBe(false);
+        expect(component.submitError()).toBeNull();
+    });
+    
+    it('should prevent resubmission when refreshing after a conflict fails', () => {
+        appointmentServiceMock.getById
+            .mockReturnValueOnce(of(appointment))
+            .mockReturnValueOnce(
+                throwError(() => new HttpErrorResponse({ status: 500 })),
+            );
+
+        appointmentServiceMock.reschedule.mockReturnValue(
+            throwError(() => new HttpErrorResponse({ status: 409 })),
+        );
+
+        fixture.detectChanges();
+
+        component.form.patchValue({
+            date: '2026-10-21',
+            startTime: '14:00',
+            endTime: '14:30',
+        });
+
+        component.onSubmit();
+
+        expect(component.hasConflict()).toBe(true);
+        expect(appointmentServiceMock.reschedule).toHaveBeenCalledOnce();
+
+        // Refresh fails with HTTP 500.
+        component.refreshAfterConflict();
+        fixture.detectChanges();
+
+        expect(appointmentServiceMock.getById).toHaveBeenCalledTimes(2);
+        expect(component.hasConflict()).toBe(true);
+        expect(component.submitError()).not.toBeNull();
+
+        // Another submission must be blocked.
+        component.onSubmit();
+
+        expect(appointmentServiceMock.reschedule).toHaveBeenCalledOnce();
+
+        const submitButton = fixture.nativeElement.querySelector(
+            '.submit-button',
+        ) as HTMLButtonElement;
+
+        expect(submitButton.disabled).toBe(true);
+    });
 });

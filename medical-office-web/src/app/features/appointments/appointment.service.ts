@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
@@ -60,7 +60,14 @@ export class AppointmentService {
         );
     }
 
-    delete(id: string): Observable<void> {
-        return this.http.delete<void>(`${this.apiUrl}/${id}`);
+    delete(id: string, rowVersion: string): Observable<void> {
+        const headers = new HttpHeaders({
+            'If-Match': `"${rowVersion}"`,
+        });
+
+        return this.http.delete<void>(
+            `${this.apiUrl}/${id}`,
+            { headers },
+        );
     }
 }
