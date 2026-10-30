@@ -3,6 +3,7 @@ using MedicalOffice.Application.Appointments;
 using MedicalOffice.Domain.Entities;
 using MedicalOffice.Domain.Enums;
 using MedicalOffice.Infrastructure.Persistence;
+using MedicalOffice.Application.Exceptions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,6 +11,7 @@ using System.Data;
 using System.Data.Common;
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace MedicalOffice.Tests.Integration;
 
@@ -108,6 +110,22 @@ public class AppointmentConcurrencyTests
                 responses.Count(r =>
                     r.StatusCode == HttpStatusCode.Conflict)
                     .Should().Be(1);
+
+                var conflictResponse = responses.Single(
+                    r => r.StatusCode == HttpStatusCode.Conflict);
+
+                using var conflictJson = JsonDocument.Parse(
+                    await conflictResponse.Content.ReadAsStringAsync());
+
+                conflictJson.RootElement
+                    .GetProperty("code")
+                    .GetString()
+                    .Should().Be(ConflictCodes.AppointmentOverlap);
+
+                conflictJson.RootElement
+                    .GetProperty("status")
+                    .GetInt32()
+                    .Should().Be(409);
 
                 using var verificationScope =
                     factory.Services.CreateScope();
@@ -1214,6 +1232,19 @@ public class AppointmentConcurrencyTests
 
             staleResponse.StatusCode.Should().Be(
                 HttpStatusCode.Conflict);
+
+            using var staleJson = JsonDocument.Parse(
+                await staleResponse.Content.ReadAsStringAsync());
+
+            staleJson.RootElement
+                .GetProperty("code")
+                .GetString()
+                .Should().Be(ConflictCodes.StaleAppointment);
+
+            staleJson.RootElement
+                .GetProperty("status")
+                .GetInt32()
+                .Should().Be(409);
 
             // Verify Client A's changes were preserved.
             using var verifyScope = factory.Services.CreateScope();

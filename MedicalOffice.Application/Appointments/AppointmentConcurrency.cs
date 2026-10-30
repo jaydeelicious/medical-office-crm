@@ -38,7 +38,8 @@ public static class AppointmentConcurrency
         {
             throw new ConflictException(
                 "The appointment has been modified by another user. " +
-                "Refresh the appointment and try again.");
+                "Refresh the appointment and try again.",
+                ConflictCodes.StaleAppointment);
         }
     }
 

@@ -73,8 +73,8 @@
             <app-error-message [message]="message" />
 
             @if (hasConflict()) {
-            <button type="button" class="refresh-appointment-button" [disabled]="isLoading() || isSubmitting()"
-                (click)="refreshAfterConflict()">
+            <button type="button" class="refresh-appointment-button" (click)="refreshAfterConflict()"
+                [disabled]="isLoading() || isSubmitting()">
                 Refresh appointment
             </button>
             }

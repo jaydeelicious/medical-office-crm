@@ -24,6 +24,8 @@ import { ConfirmDialog } from '../../../shared/components/confirm-dialog/confirm
 
 import { FormsModule } from '@angular/forms';
 
+import { getAppointmentConflictCode } from '../appointment-conflict.utils';
+
 @Component({
     selector: 'app-appointment-details',
     imports: [
@@ -175,11 +177,36 @@ export class AppointmentDetails implements OnInit {
                 error: (error: unknown) => {
                     this.selectedStatus.set(appointment.status);
 
-                    const isConflict = 
-                        error instanceof HttpErrorResponse &&
-                        error.status === 409;
+                    if (error instanceof HttpErrorResponse && error.status === 409) {
+                        const conflictCode = getAppointmentConflictCode(error);
 
-                    this.hasStatusConflict.set(isConflict);
+                        switch (conflictCode) {
+                            case 'STALE_APPOINTMENT':
+                                this.hasStatusConflict.set(true);
+                                this.statusError.set(
+                                    'This appointment was modified by another user. Refresh it before changing its status.',   
+                                );
+                                break;
+
+                            case 'APPOINTMENT_OVERLAP':
+                                this.hasStatusConflict.set(false);
+                                this.statusError.set(
+                                    'The doctor already has an appointment during this time. The cancelled appointment cannot be reactivated.',
+                                );
+                                break;
+
+                            default: 
+                                this.hasStatusConflict.set(false);
+                                this.statusError.set(
+                                    'The appointment status could not be updated because of a conflict.',
+                                );
+                                break;
+                        }
+
+                        return;
+                    }
+
+                    // Preserve the existing handling for non-409 errors
                     this.statusError.set(this.getStatusErrorMessage(error));
                 },
             });
@@ -243,7 +270,21 @@ export class AppointmentDetails implements OnInit {
                         error instanceof HttpErrorResponse &&
                         error.status === 409
                     ) {
-                        this.hasDeleteConflict.set(true);
+                        const conflictCode = getAppointmentConflictCode(error);
+                        
+                        if (conflictCode === 'STALE_APPOINTMENT') {
+                            this.hasDeleteConflict.set(true);
+                            this.deleteError.set(
+                                'This appointment was modified by another user. Refresh it before deleting.',
+                            );
+                        } else {
+                            this.hasDeleteConflict.set(false);
+                            this.deleteError.set(
+                                'The appointment could not be deleted because of a conflict.',
+                            );
+                        }
+
+                        return;
                     }
 
                     this.deleteError.set(

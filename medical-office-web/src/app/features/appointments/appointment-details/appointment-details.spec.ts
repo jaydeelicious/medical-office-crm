@@ -595,7 +595,12 @@ describe('AppointmentDetails', () => {
         appointmentServiceMock.getById.mockReturnValue(of(appointment));
 
         appointmentServiceMock.updateStatus.mockReturnValue(
-            throwError(() => new HttpErrorResponse({ status: 409 })),
+            throwError(() => new HttpErrorResponse({ 
+                                status: 409,
+                                error: {
+                                    code: 'STALE_APPOINTMENT',
+                                },
+                            })),
         );
 
         fixture.detectChanges();
@@ -643,7 +648,12 @@ describe('AppointmentDetails', () => {
             .mockReturnValueOnce(of(serverAppointment));
 
         appointmentServiceMock.updateStatus.mockReturnValue(
-            throwError(() => new HttpErrorResponse({ status: 409 })),
+            throwError(() => new HttpErrorResponse({ 
+                                status: 409,
+                                error: {
+                                    code: 'STALE_APPOINTMENT',
+                                },
+                            })),
         );
 
         fixture.detectChanges();
@@ -719,7 +729,12 @@ describe('AppointmentDetails', () => {
             .mockReturnValueOnce(of(latestAppointment));
 
         appointmentServiceMock.delete.mockReturnValue(
-            throwError(() => new HttpErrorResponse({ status: 409 })),
+            throwError(() => new HttpErrorResponse({ 
+                                status: 409,
+                            error: {
+                                code: 'STALE_APPOINTMENT',
+                            },
+                        })),
         );
 
         fixture.detectChanges();
@@ -754,4 +769,186 @@ describe('AppointmentDetails', () => {
         expect(component.showDeleteConfirmation()).toBe(true);
     });
 
+    it('should handle appointment overlap when reactivating', () => {
+        const cancelledAppointment: Appointment = {
+            ...appointment,
+            status: AppointmentStatus.Cancelled,
+        };
+
+        appointmentServiceMock.getById.mockReturnValue(
+            of(cancelledAppointment),
+        );
+
+        appointmentServiceMock.updateStatus.mockReturnValue(
+            throwError(() => new HttpErrorResponse({
+                status: 409,
+                error: {
+                    code: 'APPOINTMENT_OVERLAP',
+                },
+            })),
+        );
+
+        fixture.detectChanges();
+
+        component.selectedStatus.set(AppointmentStatus.Scheduled);
+        component.updateStatus();
+        fixture.detectChanges();
+
+        expect(appointmentServiceMock.updateStatus).toHaveBeenCalledWith(
+            appointment.id,
+            {
+                status: AppointmentStatus.Scheduled,
+                rowVersion: cancelledAppointment.rowVersion,
+            },
+        );
+
+        expect(component.hasStatusConflict()).toBe(false);
+
+        expect(component.statusError()).toContain(
+            'The doctor already has an appointment',
+        );
+
+        // The failed operation must not modify local appointment state.
+        expect(component.appointment()?.status).toBe(
+            AppointmentStatus.Cancelled,
+        );
+
+        expect(component.selectedStatus()).toBe(
+            AppointmentStatus.Cancelled,
+        );
+
+        // An overlap does not require refreshing the row version.
+        const refreshButton = fixture.nativeElement.querySelector(
+            '.status-error button',
+        );
+
+        expect(refreshButton).toBeNull();
+    });
+
+    it('should display a generic error for unknown status conflicts', () => {
+        appointmentServiceMock.getById.mockReturnValue(of(appointment));
+
+        appointmentServiceMock.updateStatus.mockReturnValue(
+            throwError(() => new HttpErrorResponse({
+                status: 409,
+                error: {
+                    title: 'Conflict',
+                    status: 409,
+                },
+            })),
+        );
+
+        fixture.detectChanges();
+
+        component.selectedStatus.set(AppointmentStatus.Completed);
+        component.updateStatus();
+        fixture.detectChanges();
+
+        expect(component.hasStatusConflict()).toBe(false);
+
+        expect(component.statusError()).toContain(
+            'could not be updated because of a conflict',
+        );
+
+        expect(component.appointment()?.status).toBe(
+            AppointmentStatus.Scheduled,
+        );
+
+        expect(component.selectedStatus()).toBe(
+            AppointmentStatus.Scheduled,
+        );
+
+        expect(component.isUpdatingStatus()).toBe(false);
+
+        expect(fixture.nativeElement.querySelector(
+            '.status-error button',
+        )).toBeNull();
+    });
+
+    it('should allow another status update after an overlap conflict', () => {
+        const cancelledAppointment: Appointment = {
+            ...appointment,
+            status: AppointmentStatus.Cancelled,
+        };
+
+        const completedAppointment: Appointment = {
+            ...cancelledAppointment,
+            status: AppointmentStatus.Completed,
+            rowVersion: 'CAcGBQQDAgE=',
+        };
+
+        appointmentServiceMock.getById
+            .mockReturnValueOnce(of(cancelledAppointment))
+            .mockReturnValueOnce(of(completedAppointment));
+
+        appointmentServiceMock.updateStatus
+            .mockReturnValueOnce(
+                throwError(() => new HttpErrorResponse({
+                    status: 409,
+                    error: {
+                        code: 'APPOINTMENT_OVERLAP',
+                    },
+                })),
+            )
+            .mockReturnValueOnce(of(void 0));
+
+        fixture.detectChanges();
+
+        // First attempt: reactivation conflicts with another appointment.
+        component.selectedStatus.set(AppointmentStatus.Scheduled);
+        component.updateStatus();
+
+        expect(component.hasStatusConflict()).toBe(false);
+        expect(appointmentServiceMock.updateStatus).toHaveBeenCalledOnce();
+
+        // Try another status using the same current row version.
+        component.selectedStatus.set(AppointmentStatus.Completed);
+        component.updateStatus();
+
+        expect(appointmentServiceMock.updateStatus).toHaveBeenCalledTimes(2);
+
+        expect(appointmentServiceMock.updateStatus).toHaveBeenLastCalledWith(
+            appointment.id,
+            {
+                status: AppointmentStatus.Completed,
+                rowVersion: cancelledAppointment.rowVersion,
+            },
+        );
+
+        expect(component.appointment()).toEqual(completedAppointment);
+        expect(component.statusError()).toBeNull();
+    });
+
+    it('should handle unknown deletion conflicts without assuming stale data', () => {
+        appointmentServiceMock.getById.mockReturnValue(of(appointment));
+
+        appointmentServiceMock.delete.mockReturnValue(
+            throwError(() => new HttpErrorResponse({
+                status: 409,
+                error: {
+                    title: 'Conflict',
+                    status: 409,
+                },
+            })),
+        );
+
+        fixture.detectChanges();
+
+        component.requestDelete();
+        component.confirmDelete();
+        fixture.detectChanges();
+
+        expect(component.hasDeleteConflict()).toBe(false);
+        expect(component.deleteError()).toContain(
+            'could not be deleted because of a conflict',
+        );
+
+        expect(component.showDeleteConfirmation()).toBe(false);
+        expect(appointmentServiceMock.delete).toHaveBeenCalledOnce();
+
+        // No refresh-required state for an unclassified conflict.
+        expect(
+            fixture.nativeElement.querySelector('.refresh-delete-button'),
+        ).toBeNull();
+    });
 });

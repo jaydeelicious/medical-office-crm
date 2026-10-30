@@ -28,6 +28,8 @@ import { appointmentTimeValidator } from '../validators/appointment-time.validat
 import { LoadingIndicator } from '../../../shared/components/loading-indicator/loading-indicator';
 import { ErrorMessage } from '../../../shared/components/error-message/error-message';
 
+import { getAppointmentConflictCode } from '../appointment-conflict.utils';
+
 @Component({
     selector: 'app-appointment-reschedule',
     imports: [
@@ -173,7 +175,32 @@ export class AppointmentReschedule implements OnInit {
                         error instanceof HttpErrorResponse &&
                         error.status === 409
                     ) {
-                        this.hasConflict.set(true);
+                        const conflictCode = getAppointmentConflictCode(error);
+
+                        switch (conflictCode) {
+                            case 'STALE_APPOINTMENT':
+                                this.hasConflict.set(true);
+                                this.submitError.set(
+                                    'This appointment was modified by another user. Refresh the appointment before rescheduling.',
+                                );
+                                break;
+                            
+                            case 'APPOINTMENT_OVERLAP':
+                                this.hasConflict.set(false);
+                                this.submitError.set(
+                                    'The doctor already has an appointment during this time. Please choose another time.'
+                                );
+                                break;
+
+                            default:
+                                this.hasConflict.set(false);
+                                this.submitError.set(
+                                    'Unable to reschedule due to a conflict. Please review the appointment and try again.',
+                                );
+                                break;
+                        }
+
+                        return;
                     }
 
                     this.handleSubmitError(error);
