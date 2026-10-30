@@ -270,7 +270,21 @@ export class AppointmentDetails implements OnInit {
                         error instanceof HttpErrorResponse &&
                         error.status === 409
                     ) {
-                        this.hasDeleteConflict.set(true);
+                        const conflictCode = getAppointmentConflictCode(error);
+                        
+                        if (conflictCode === 'STALE_APPOINTMENT') {
+                            this.hasDeleteConflict.set(true);
+                            this.deleteError.set(
+                                'This appointment was modified by another user. Refresh it before deleting.',
+                            );
+                        } else {
+                            this.hasDeleteConflict.set(false);
+                            this.deleteError.set(
+                                'The appointment could not be deleted because of a conflict.',
+                            );
+                        }
+
+                        return;
                     }
 
                     this.deleteError.set(

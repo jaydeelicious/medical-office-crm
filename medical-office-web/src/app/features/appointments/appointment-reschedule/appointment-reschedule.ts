@@ -29,7 +29,6 @@ import { LoadingIndicator } from '../../../shared/components/loading-indicator/l
 import { ErrorMessage } from '../../../shared/components/error-message/error-message';
 
 import { getAppointmentConflictCode } from '../appointment-conflict.utils';
-import { LucideReceiptRussianRuble } from '@lucide/angular';
 
 @Component({
     selector: 'app-appointment-reschedule',

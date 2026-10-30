@@ -729,7 +729,12 @@ describe('AppointmentDetails', () => {
             .mockReturnValueOnce(of(latestAppointment));
 
         appointmentServiceMock.delete.mockReturnValue(
-            throwError(() => new HttpErrorResponse({ status: 409 })),
+            throwError(() => new HttpErrorResponse({ 
+                                status: 409,
+                            error: {
+                                code: 'STALE_APPOINTMENT',
+                            },
+                        })),
         );
 
         fixture.detectChanges();
@@ -912,5 +917,38 @@ describe('AppointmentDetails', () => {
 
         expect(component.appointment()).toEqual(completedAppointment);
         expect(component.statusError()).toBeNull();
+    });
+
+    it('should handle unknown deletion conflicts without assuming stale data', () => {
+        appointmentServiceMock.getById.mockReturnValue(of(appointment));
+
+        appointmentServiceMock.delete.mockReturnValue(
+            throwError(() => new HttpErrorResponse({
+                status: 409,
+                error: {
+                    title: 'Conflict',
+                    status: 409,
+                },
+            })),
+        );
+
+        fixture.detectChanges();
+
+        component.requestDelete();
+        component.confirmDelete();
+        fixture.detectChanges();
+
+        expect(component.hasDeleteConflict()).toBe(false);
+        expect(component.deleteError()).toContain(
+            'could not be deleted because of a conflict',
+        );
+
+        expect(component.showDeleteConfirmation()).toBe(false);
+        expect(appointmentServiceMock.delete).toHaveBeenCalledOnce();
+
+        // No refresh-required state for an unclassified conflict.
+        expect(
+            fixture.nativeElement.querySelector('.refresh-delete-button'),
+        ).toBeNull();
     });
 });
