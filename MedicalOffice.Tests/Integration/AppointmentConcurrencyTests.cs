@@ -233,6 +233,13 @@ public class AppointmentConcurrencyTests
                 responses.Count(r => r.StatusCode == HttpStatusCode.Conflict)
                     .Should().Be(1);
 
+                var conflictResponse = responses.Single(
+                    r => r.StatusCode == HttpStatusCode.Conflict);
+
+                await AssertConflictCodeAsync(
+                    conflictResponse,
+                    ConflictCodes.AppointmentOverlap);
+
                 using var scope = factory.Services.CreateScope();
 
                 var db = scope.ServiceProvider
@@ -573,6 +580,13 @@ public class AppointmentConcurrencyTests
                     r.StatusCode == HttpStatusCode.Conflict)
                     .Should().Be(1);
 
+                var conflictResponse = responses.Single(
+                    r => r.StatusCode == HttpStatusCode.Conflict);
+
+                await AssertConflictCodeAsync(
+                    conflictResponse,
+                    ConflictCodes.AppointmentOverlap);
+
                 using var scope = factory.Services.CreateScope();
 
                 var db = scope.ServiceProvider
@@ -699,6 +713,13 @@ public class AppointmentConcurrencyTests
                     r.StatusCode == HttpStatusCode.Conflict)
                     .Should().Be(1);
 
+                var conflictResponse = responses.Single(
+                    r => r.StatusCode == HttpStatusCode.Conflict);
+
+                await AssertConflictCodeAsync(
+                    conflictResponse,
+                    ConflictCodes.AppointmentOverlap);
+
                 using var verifyScope = factory.Services.CreateScope();
 
                 var verifyDb = verifyScope.ServiceProvider
@@ -810,6 +831,10 @@ public class AppointmentConcurrencyTests
 
             response.StatusCode.Should().Be(HttpStatusCode.Conflict);
 
+            await AssertConflictCodeAsync(
+                response,
+                ConflictCodes.AppointmentOverlap);
+
             using var verifyScope = factory.Services.CreateScope();
 
             var verifyDb = verifyScope.ServiceProvider
@@ -920,6 +945,13 @@ public class AppointmentConcurrencyTests
                 responses.Count(r =>
                     r.StatusCode == HttpStatusCode.Conflict)
                     .Should().Be(1);
+
+                var conflictResponse = responses.Single(
+                    r => r.StatusCode == HttpStatusCode.Conflict);
+
+                await AssertConflictCodeAsync(
+                    conflictResponse,
+                    ConflictCodes.AppointmentOverlap);
 
                 using var verifyScope = factory.Services.CreateScope();
 
@@ -1726,7 +1758,7 @@ public class AppointmentConcurrencyTests
     }
 
     [Fact]
-    public async Task DeleteAndUpdateStatus_ConcurrentRequests_PreserveConsistency()
+    public async Task   _ConcurrentRequests_PreserveConsistency()
     {
         using var factory = new SqlServerWebApplicationFactory();
 
@@ -1949,6 +1981,26 @@ public class AppointmentConcurrencyTests
             .SingleAsync();
 
         return Convert.ToBase64String(rowVersion);
+    }
+
+    private static async Task AssertConflictCodeAsync(
+        HttpResponseMessage response,
+        string expectedCode)
+    {
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+
+        using var json = JsonDocument.Parse(
+            await response.Content.ReadAsStringAsync());
+
+        json.RootElement
+            .GetProperty("status")
+            .GetInt32()
+            .Should().Be(409);
+
+        json.RootElement
+            .GetProperty("code")
+            .GetString()
+            .Should().Be(expectedCode);
     }
 
     private static async Task<int> AcquireDoctorLockAsync(
