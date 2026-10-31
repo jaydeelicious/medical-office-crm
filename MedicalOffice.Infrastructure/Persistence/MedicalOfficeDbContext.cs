@@ -19,6 +19,8 @@ namespace MedicalOffice.Infrastructure.Persistence
 
         public DbSet<Appointment> Appointments => Set<Appointment>();
 
+        public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
