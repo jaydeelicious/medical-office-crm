@@ -22,6 +22,8 @@ using OpenIddict.Validation.AspNetCore;
 using MedicalOffice.Api.Authentication;
 using Microsoft.AspNetCore.Mvc;
 
+using MedicalOffice.Infrastructure.Persistence.Interceptors;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -38,12 +40,15 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddDbContext<MedicalOfficeDbContext>(
-    options =>
+    (serviceProvider, options) =>
     {
         options.UseSqlServer(
             builder.Configuration.GetConnectionString("DefaultConnection"));
 
         options.UseOpenIddict();
+
+        options.AddInterceptors(
+            serviceProvider.GetRequiredService<AuditSaveChangesInterceptor>());
     });
 
 builder.Services.AddOpenIddict()
@@ -67,6 +72,8 @@ builder.Services.AddScoped<DoctorService>();
 
 builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
 builder.Services.AddScoped<AppointmentService>();
+
+builder.Services.AddTransient<AuditSaveChangesInterceptor>();
 
 builder.Services.AddValidatorsFromAssemblyContaining<CreatePatientRequestValidator>();
 

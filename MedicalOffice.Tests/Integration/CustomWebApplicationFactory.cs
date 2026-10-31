@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using MedicalOffice.Infrastructure.Persistence;
 using MedicalOffice.Tests.Integration.Authentication;
+using MedicalOffice.Infrastructure.Persistence.Interceptors;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Configuration;
@@ -51,7 +52,10 @@ namespace MedicalOffice.Tests.Integration
 
                     options.UseSqlite(connection);
                     options.UseOpenIddict();
-                    options.AddInterceptors(new SqliteRowVersionInterceptor());
+
+                    options.AddInterceptors(
+                        serviceProvider.GetRequiredService<AuditSaveChangesInterceptor>(), 
+                        new SqliteRowVersionInterceptor());
                 });
 
                 services
