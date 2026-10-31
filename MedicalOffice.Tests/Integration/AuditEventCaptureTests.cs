@@ -618,6 +618,63 @@ public class AuditEventCaptureTests
     }
 
 
+    [Fact]
+    public async Task RolledBackTransaction_ShouldNotLeakAuditIntoNextSave()
+    {
+        using var factory = new CustomWebApplicationFactory();
+        using var client = factory.CreateClient();
+        using var scope = factory.Services.CreateScope();
+
+        var context = scope.ServiceProvider
+            .GetRequiredService<MedicalOfficeDbContext>();
+
+        await context.Database.EnsureCreatedAsync();
+
+        var rolledBackPatient = CreatePatient();
+
+        await using (var transaction =
+            await context.Database.BeginTransactionAsync())
+        {
+            context.Patients.Add(rolledBackPatient);
+            await context.SaveChangesAsync();
+
+            await transaction.RollbackAsync();
+        }
+
+        // SaveChanges succeeded, but the transaction rolled back.
+        // Clear accepted tracked entities before reusing the context.
+        context.ChangeTracker.Clear();
+
+        var committedPatient = CreatePatient();
+
+        context.Patients.Add(committedPatient);
+        await context.SaveChangesAsync();
+
+        // Verify database state.
+        context.ChangeTracker.Clear();
+
+        var patients = await context.Patients
+            .AsNoTracking()
+            .ToListAsync();
+
+        var auditLogs = await context.AuditLogs
+            .AsNoTracking()
+            .Where(a => a.EntityType == "Patient")
+            .ToListAsync();
+
+        patients.Should().ContainSingle(
+            p => p.Id == committedPatient.Id);
+
+        auditLogs.Should().ContainSingle();
+
+        auditLogs[0].EntityId.Should().Be(committedPatient.Id);
+        auditLogs[0].Action.Should().Be("Created");
+
+        auditLogs.Should().NotContain(
+            a => a.EntityId == rolledBackPatient.Id);
+    }
+
+
     private static Patient CreatePatient()
     {
         return new Patient
