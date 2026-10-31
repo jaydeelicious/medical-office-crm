@@ -233,6 +233,13 @@ public class AppointmentConcurrencyTests
                 responses.Count(r => r.StatusCode == HttpStatusCode.Conflict)
                     .Should().Be(1);
 
+                var conflictResponse = responses.Single(
+                    r => r.StatusCode == HttpStatusCode.Conflict);
+
+                await AssertConflictCodeAsync(
+                    conflictResponse,
+                    ConflictCodes.AppointmentOverlap);
+
                 using var scope = factory.Services.CreateScope();
 
                 var db = scope.ServiceProvider
@@ -573,6 +580,13 @@ public class AppointmentConcurrencyTests
                     r.StatusCode == HttpStatusCode.Conflict)
                     .Should().Be(1);
 
+                var conflictResponse = responses.Single(
+                    r => r.StatusCode == HttpStatusCode.Conflict);
+
+                await AssertConflictCodeAsync(
+                    conflictResponse,
+                    ConflictCodes.AppointmentOverlap);
+
                 using var scope = factory.Services.CreateScope();
 
                 var db = scope.ServiceProvider
@@ -699,6 +713,13 @@ public class AppointmentConcurrencyTests
                     r.StatusCode == HttpStatusCode.Conflict)
                     .Should().Be(1);
 
+                var conflictResponse = responses.Single(
+                    r => r.StatusCode == HttpStatusCode.Conflict);
+
+                await AssertConflictCodeAsync(
+                    conflictResponse,
+                    ConflictCodes.AppointmentOverlap);
+
                 using var verifyScope = factory.Services.CreateScope();
 
                 var verifyDb = verifyScope.ServiceProvider
@@ -810,6 +831,10 @@ public class AppointmentConcurrencyTests
 
             response.StatusCode.Should().Be(HttpStatusCode.Conflict);
 
+            await AssertConflictCodeAsync(
+                response,
+                ConflictCodes.AppointmentOverlap);
+
             using var verifyScope = factory.Services.CreateScope();
 
             var verifyDb = verifyScope.ServiceProvider
@@ -920,6 +945,13 @@ public class AppointmentConcurrencyTests
                 responses.Count(r =>
                     r.StatusCode == HttpStatusCode.Conflict)
                     .Should().Be(1);
+
+                var conflictResponse = responses.Single(
+                    r => r.StatusCode == HttpStatusCode.Conflict);
+
+                await AssertConflictCodeAsync(
+                    conflictResponse,
+                    ConflictCodes.AppointmentOverlap);
 
                 using var verifyScope = factory.Services.CreateScope();
 
@@ -1589,6 +1621,289 @@ public class AppointmentConcurrencyTests
         }
     }
 
+    [Fact]
+    public async Task UpdateStatus_ConcurrentRequests_SameRowVersion_OnlyOneSucceeds()
+    {
+        using var factory = new SqlServerWebApplicationFactory();
+
+        try
+        {
+            await factory.InitializeDatabaseAsync();
+
+            var patientId = Guid.NewGuid();
+            var doctorId = Guid.NewGuid();
+            var appointmentId = Guid.NewGuid();
+            var day = new DateTime(2026, 11, 10);
+
+            using (var scope = factory.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider
+                    .GetRequiredService<MedicalOfficeDbContext>();
+
+                db.Patients.Add(new Patient
+                {
+                    Id = patientId,
+                    FirstName = "John",
+                    LastName = "Doe"
+                });
+
+                db.Doctors.Add(new Doctor
+                {
+                    Id = doctorId,
+                    FirstName = "Maria",
+                    LastName = "Smith",
+                    Specialty = "Cardiology"
+                });
+
+                db.Appointments.Add(new Appointment
+                {
+                    Id = appointmentId,
+                    PatientId = patientId,
+                    DoctorId = doctorId,
+                    StartTime = day.AddHours(10),
+                    EndTime = day.AddHours(11),
+                    Status = AppointmentStatus.Scheduled
+                });
+
+                await db.SaveChangesAsync();
+            }
+
+            using var client = factory.CreateClient();
+
+            // Both clients read the same version before updating.
+            var originalVersion = await GetRowVersionAsync(
+                factory,
+                appointmentId);
+
+            var completedRequest = new UpdateAppointmentStatusRequest
+            {
+                Status = AppointmentStatus.Completed,
+                RowVersion = originalVersion
+            };
+
+            var cancelledRequest = new UpdateAppointmentStatusRequest
+            {
+                Status = AppointmentStatus.Cancelled,
+                RowVersion = originalVersion
+            };
+
+            // Send both requests concurrently.
+            var completedTask = client.PatchAsJsonAsync(
+                $"/api/appointments/{appointmentId}/status",
+                completedRequest);
+
+            var cancelledTask = client.PatchAsJsonAsync(
+                $"/api/appointments/{appointmentId}/status",
+                cancelledRequest);
+
+            var responses = await Task.WhenAll(
+                completedTask,
+                cancelledTask);
+
+            try
+            {
+                responses.Count(r =>
+                    r.StatusCode == HttpStatusCode.NoContent)
+                    .Should().Be(1);
+
+                responses.Count(r =>
+                    r.StatusCode == HttpStatusCode.Conflict)
+                    .Should().Be(1);
+
+                // The losing request must report stale data.
+                var conflictResponse = responses.Single(r =>
+                    r.StatusCode == HttpStatusCode.Conflict);
+
+                using var conflictJson = JsonDocument.Parse(
+                    await conflictResponse.Content.ReadAsStringAsync());
+
+                conflictJson.RootElement
+                    .GetProperty("code")
+                    .GetString()
+                    .Should().Be(ConflictCodes.StaleAppointment);
+
+                // Verify persisted state using a fresh DbContext.
+                using var verifyScope = factory.Services.CreateScope();
+
+                var verifyDb = verifyScope.ServiceProvider
+                    .GetRequiredService<MedicalOfficeDbContext>();
+
+                var savedAppointment = await verifyDb.Appointments
+                    .AsNoTracking()
+                    .SingleAsync(a => a.Id == appointmentId);
+
+                var winningStatus =
+                    responses[0].StatusCode == HttpStatusCode.NoContent
+                        ? AppointmentStatus.Completed
+                        : AppointmentStatus.Cancelled;
+
+                savedAppointment.Status.Should().Be(winningStatus);
+
+                // A successful modification advances the version.
+                Convert.ToBase64String(savedAppointment.RowVersion)
+                    .Should().NotBe(originalVersion);
+            }
+            finally
+            {
+                foreach (var response in responses)
+                {
+                    response.Dispose();
+                }
+            }
+        }
+        finally
+        {
+            await factory.DeleteDatabaseAsync();
+        }
+    }
+
+    [Fact]
+    public async Task   _ConcurrentRequests_PreserveConsistency()
+    {
+        using var factory = new SqlServerWebApplicationFactory();
+
+        try
+        {
+            await factory.InitializeDatabaseAsync();
+
+            var patientId = Guid.NewGuid();
+            var doctorId = Guid.NewGuid();
+            var appointmentId = Guid.NewGuid();
+            var day = new DateTime(2026, 11, 10);
+
+            using (var scope = factory.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider
+                    .GetRequiredService<MedicalOfficeDbContext>();
+
+                db.Patients.Add(new Patient
+                {
+                    Id = patientId,
+                    FirstName = "John",
+                    LastName = "Doe"
+                });
+
+                db.Doctors.Add(new Doctor
+                {
+                    Id = doctorId,
+                    FirstName = "Maria",
+                    LastName = "Smith",
+                    Specialty = "Cardiology"
+                });
+
+                db.Appointments.Add(new Appointment
+                {
+                    Id = appointmentId,
+                    PatientId = patientId,
+                    DoctorId = doctorId,
+                    StartTime = day.AddHours(10),
+                    EndTime = day.AddHours(11),
+                    Status = AppointmentStatus.Scheduled
+                });
+
+                await db.SaveChangesAsync();
+            }
+
+            using var client = factory.CreateClient();
+
+            var originalVersion = await GetRowVersionAsync(
+                factory,
+                appointmentId);
+
+            var statusRequest = new UpdateAppointmentStatusRequest
+            {
+                Status = AppointmentStatus.Completed,
+                RowVersion = originalVersion
+            };
+
+            using var deleteRequest = new HttpRequestMessage(
+                HttpMethod.Delete,
+                $"/api/appointments/{appointmentId}");
+
+            deleteRequest.Headers.TryAddWithoutValidation(
+                "If-Match",
+                $"\"{originalVersion}\"");
+
+            // Both operations use the same original row version.
+            var deleteTask = client.SendAsync(deleteRequest);
+
+            var updateTask = client.PatchAsJsonAsync(
+                $"/api/appointments/{appointmentId}/status",
+                statusRequest);
+
+            using var deleteResponse = await deleteTask;
+            using var updateResponse = await updateTask;
+
+            var deleteSucceeded =
+                deleteResponse.StatusCode == HttpStatusCode.NoContent;
+
+            var updateSucceeded =
+                updateResponse.StatusCode == HttpStatusCode.NoContent;
+
+            // Exactly one operation must succeed.
+            (deleteSucceeded ^ updateSucceeded).Should().BeTrue();
+
+            if (deleteSucceeded)
+            {
+                // Update may find the record already deleted (404),
+                // or detect an outdated version (409).
+                updateResponse.StatusCode.Should().BeOneOf(
+                    HttpStatusCode.NotFound,
+                    HttpStatusCode.Conflict);
+
+                if (updateResponse.StatusCode == HttpStatusCode.Conflict)
+                {
+                    using var conflictJson = JsonDocument.Parse(
+                        await updateResponse.Content.ReadAsStringAsync());
+
+                    conflictJson.RootElement.GetProperty("code")
+                        .GetString()
+                        .Should().Be(ConflictCodes.StaleAppointment);
+                }
+            }
+            else
+            {
+                // The update won; deletion must reject its stale token.
+                deleteResponse.StatusCode.Should().Be(
+                    HttpStatusCode.Conflict);
+
+                using var conflictJson = JsonDocument.Parse(
+                    await deleteResponse.Content.ReadAsStringAsync());
+
+                conflictJson.RootElement.GetProperty("code")
+                    .GetString()
+                    .Should().Be(ConflictCodes.StaleAppointment);
+            }
+
+            using var verifyScope = factory.Services.CreateScope();
+
+            var verifyDb = verifyScope.ServiceProvider
+                .GetRequiredService<MedicalOfficeDbContext>();
+
+            var savedAppointment = await verifyDb.Appointments
+                .AsNoTracking()
+                .SingleOrDefaultAsync(a => a.Id == appointmentId);
+
+            if (deleteSucceeded)
+            {
+                savedAppointment.Should().BeNull();
+            }
+            else
+            {
+                savedAppointment.Should().NotBeNull();
+                savedAppointment!.Status.Should().Be(
+                    AppointmentStatus.Completed);
+
+                Convert.ToBase64String(savedAppointment.RowVersion)
+                    .Should().NotBe(originalVersion);
+            }
+        }
+        finally
+        {
+            await factory.DeleteDatabaseAsync();
+        }
+    }
+
     private static async Task<Guid> SeedAppointmentAsync(
     SqlServerWebApplicationFactory factory)
     {
@@ -1666,6 +1981,26 @@ public class AppointmentConcurrencyTests
             .SingleAsync();
 
         return Convert.ToBase64String(rowVersion);
+    }
+
+    private static async Task AssertConflictCodeAsync(
+        HttpResponseMessage response,
+        string expectedCode)
+    {
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+
+        using var json = JsonDocument.Parse(
+            await response.Content.ReadAsStringAsync());
+
+        json.RootElement
+            .GetProperty("status")
+            .GetInt32()
+            .Should().Be(409);
+
+        json.RootElement
+            .GetProperty("code")
+            .GetString()
+            .Should().Be(expectedCode);
     }
 
     private static async Task<int> AcquireDoctorLockAsync(
