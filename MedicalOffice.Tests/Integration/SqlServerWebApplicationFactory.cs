@@ -1,5 +1,6 @@
 ﻿using MedicalOffice.Infrastructure.Persistence;
 using MedicalOffice.Tests.Integration.Authentication;
+using MedicalOffice.Infrastructure.Persistence.Interceptors;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
@@ -42,10 +43,15 @@ public sealed class SqlServerWebApplicationFactory
             services.RemoveAll<
                 IDbContextOptionsConfiguration<MedicalOfficeDbContext>>();
 
-            services.AddDbContext<MedicalOfficeDbContext>(options =>
+            services.AddDbContext<MedicalOfficeDbContext>(
+                (serviceProvider, options) =>
             {
                 options.UseSqlServer(ConnectionString);
+
                 options.UseOpenIddict();
+
+                options.AddInterceptors(
+                    serviceProvider.GetRequiredService<AuditSaveChangesInterceptor>());
             });
 
             services
