@@ -1,6 +1,7 @@
 ﻿
 using System.Runtime.CompilerServices;
 using MedicalOffice.Domain.Entities;
+using MedicalOffice.Application.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -12,6 +13,13 @@ public sealed class AuditSaveChangesInterceptor
 {
     private readonly ConditionalWeakTable<DbContext, PendingAuditState>
         _contextStates = new();
+
+    private readonly ICurrentUserService _currentUserService;
+
+    public AuditSaveChangesInterceptor(ICurrentUserService currentUserService)
+    {
+        _currentUserService = currentUserService;
+    }
 
     private sealed class PendingAuditState
     {
@@ -78,6 +86,19 @@ public sealed class AuditSaveChangesInterceptor
                     or EntityState.Deleted)
             .ToList();
 
+        string? userId = null;
+        
+        if (activeEntries.Count > 0)
+        {
+            userId = _currentUserService.UserId;
+
+            if (_currentUserService.IsAuthenticated && 
+                string.IsNullOrWhiteSpace(userId))
+            {
+                throw new InvalidOperationException("Cannot audit an authenticated operation without a user ID.");
+            }
+        }
+
         var activeEntities = new HashSet<object>(
             activeEntries.Select(e => e.Entity),
             ReferenceEqualityComparer.Instance);
@@ -113,6 +134,7 @@ public sealed class AuditSaveChangesInterceptor
                 existingAudit.EntityType =
                     entry.Metadata.ClrType.Name;
                 existingAudit.EntityId = GetEntityId(entry);
+                existingAudit.UserId = userId;
 
                 continue;
             }
@@ -124,7 +146,7 @@ public sealed class AuditSaveChangesInterceptor
                 EntityType = entry.Metadata.ClrType.Name,
                 EntityId = GetEntityId(entry),
                 Action = action,
-                UserId = null,
+                UserId = userId,
                 ChangesJson = null,
                 CorrelationId = null
             };

@@ -75,6 +75,10 @@ builder.Services.AddScoped<AppointmentService>();
 
 builder.Services.AddTransient<AuditSaveChangesInterceptor>();
 
+builder.Services.AddHttpContextAccessor();
+
+builder.Services.AddScoped<ICurrentUserService, HttpCurrentUserService>();
+
 builder.Services.AddValidatorsFromAssemblyContaining<CreatePatientRequestValidator>();
 
 builder.Services.AddEndpointsApiExplorer();
