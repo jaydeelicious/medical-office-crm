@@ -364,5 +364,50 @@ public class AuditAppointmentWorkflowTests
         return (patient.Id, doctor.Id);
     }
 
+    [Fact]
+    public async Task AppointmentCreation_ShouldNotAuditSensitiveNotes()
+    {
+        using var factory = new CustomWebApplicationFactory();
+        using var client = factory.CreateClient();
+
+        var (patientId, doctorId) =
+            await SeedPatientAndDoctorAsync(factory);
+
+        var start = new DateTime(2026, 11, 10, 10, 0, 0);
+
+        var response = await client.PostAsJsonAsync(
+            "/api/appointments",
+            new
+            {
+                PatientId = patientId,
+                DoctorId = doctorId,
+                StartTime = start,
+                EndTime = start.AddMinutes(30),
+                Notes = "CONFIDENTIAL_MEDICAL_INFORMATION"
+            });
+
+        response.StatusCode.Should()
+            .Be(HttpStatusCode.Created);
+
+        var appointment = await response.Content
+            .ReadFromJsonAsync<AppointmentDto>();
+
+        appointment.Should().NotBeNull();
+
+        using var scope = factory.Services.CreateScope();
+
+        var context = scope.ServiceProvider
+            .GetRequiredService<MedicalOfficeDbContext>();
+
+        var auditLog = await context.AuditLogs
+            .AsNoTracking()
+            .SingleAsync(a =>
+                a.EntityType == "Appointment" &&
+                a.EntityId == appointment!.Id);
+
+        auditLog.Action.Should().Be("Created");
+        auditLog.UserId.Should().Be("test-user-id");
+        auditLog.ChangesJson.Should().BeNull();
+    }
 
 }
