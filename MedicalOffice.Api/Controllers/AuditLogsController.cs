@@ -41,7 +41,7 @@ public sealed class AuditLogsController : ControllerBase
         }
     }
 
-    [HttpGet("id:guid")]
+    [HttpGet("{id:guid}")]
     public async Task<ActionResult<AuditLogDto>> GetById(
         Guid id,
         CancellationToken cancellationToken)

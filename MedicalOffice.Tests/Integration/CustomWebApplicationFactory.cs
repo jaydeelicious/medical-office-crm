@@ -71,6 +71,12 @@ namespace MedicalOffice.Tests.Integration
                         TestAuthHandler.SchemeName)
                         .RequireAuthenticatedUser()
                         .Build());
+
+                    options.AddPolicy("AuditRead", new AuthorizationPolicyBuilder(
+                        TestAuthHandler.SchemeName)
+                        .RequireAuthenticatedUser()
+                        .RequireRole("Admin")
+                        .Build());
                 });
             });
         }
