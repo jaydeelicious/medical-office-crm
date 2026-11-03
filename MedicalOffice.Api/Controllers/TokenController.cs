@@ -88,6 +88,20 @@ namespace MedicalOffice.Api.Controllers
                 Claims.Email,
                 await _userManager.GetEmailAsync(user));
 
+            // Remove any role claims inherited from the previous grant.
+            foreach (var claim in identity.FindAll(Claims.Role).ToList())
+            {
+                identity.RemoveClaim(claim);
+            }
+
+            // Reload current roles from Identity.
+            var roles = await _userManager.GetRolesAsync(user);
+
+            foreach (var role in roles)
+            {
+                identity.AddClaim(new Claim(Claims.Role, role));
+            }
+
             // Apply explicit disclosure rules to the refreshed claims.
             identity.SetDestinations(claim => claim.Type switch
             {
@@ -98,6 +112,9 @@ namespace MedicalOffice.Api.Controllers
                 Claims.Email when identity.HasScope(Scopes.Email)
                     => [Destinations.AccessToken,
                     Destinations.IdentityToken],
+
+                Claims.Role 
+                    => [Destinations.AccessToken],
 
                 _ => []
             });

@@ -162,6 +162,15 @@ builder.Services.AddAuthorization(options =>
 
         policy.RequireAuthenticatedUser();
     });
+
+    options.AddPolicy("AuditRead", policy =>
+    {
+        policy.AddAuthenticationSchemes(
+            OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
+
+        policy.RequireAuthenticatedUser();
+        policy.RequireRole("Admin");
+    });
 });
 
 var app = builder.Build();
