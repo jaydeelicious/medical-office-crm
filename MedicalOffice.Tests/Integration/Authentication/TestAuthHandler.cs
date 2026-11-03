@@ -20,11 +20,25 @@ namespace MedicalOffice.Tests.Integration.Authentication
 
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
         {
-            var claims = new[]
+            // These headers are interpreted only by the test authentication
+            // handler, never by the production authentication middleware.
+            var authMode = Request.Headers["X-Test-Auth"].ToString();
+
+            if (authMode == "Anonymous")
             {
-                new Claim(ClaimTypes.NameIdentifier, "test-user-id"),
-                new Claim(ClaimTypes.Name, "Test User")
+                return Task.FromResult(AuthenticateResult.NoResult());
+            }
+
+            var claims = new List<Claim>
+            {
+                new(ClaimTypes.NameIdentifier, "test-user-id"),
+                new(ClaimTypes.Name, "Test User")
             };
+
+            if (authMode == "Admin")
+            {
+                claims.Add(new Claim(ClaimTypes.Role, "Admin"));
+            }
 
             var identity = new ClaimsIdentity(claims, SchemeName);
             var principal = new ClaimsPrincipal(identity);

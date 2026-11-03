@@ -7,6 +7,7 @@ using MedicalOffice.Infrastructure.Repositories;
 using MedicalOffice.Application.Patients;
 using MedicalOffice.Application.Doctors;
 using MedicalOffice.Application.Appointments;
+using MedicalOffice.Application.AuditLogs;
 
 using MedicalOffice.Api.ExceptionHandling;
 
@@ -72,6 +73,9 @@ builder.Services.AddScoped<DoctorService>();
 
 builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
 builder.Services.AddScoped<AppointmentService>();
+
+builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+builder.Services.AddScoped<AuditLogService>();
 
 builder.Services.AddTransient<AuditSaveChangesInterceptor>();
 
@@ -157,6 +161,15 @@ builder.Services.AddAuthorization(options =>
             IdentityConstants.ApplicationScheme);
 
         policy.RequireAuthenticatedUser();
+    });
+
+    options.AddPolicy("AuditRead", policy =>
+    {
+        policy.AddAuthenticationSchemes(
+            OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
+
+        policy.RequireAuthenticatedUser();
+        policy.RequireRole("Admin");
     });
 });
 
