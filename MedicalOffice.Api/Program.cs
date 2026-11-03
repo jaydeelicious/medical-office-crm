@@ -73,6 +73,8 @@ builder.Services.AddScoped<DoctorService>();
 builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
 builder.Services.AddScoped<AppointmentService>();
 
+builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+
 builder.Services.AddTransient<AuditSaveChangesInterceptor>();
 
 builder.Services.AddHttpContextAccessor();
