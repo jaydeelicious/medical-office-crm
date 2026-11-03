@@ -351,4 +351,33 @@ describe('authTokenInterceptor', () => {
         expect(authServiceMock.login).not.toHaveBeenCalled();
         expect(authServiceMock.logout).not.toHaveBeenCalled();
     });
+
+    it.each([
+        '/api/audit-logs',
+        '/api/audit-logs/11111111-1111-1111-1111-111111111111',
+    ])('attaches a bearer token to %s', (url) => {
+        http.get(url).subscribe();
+
+        const request = httpMock.expectOne(url);
+
+        expect(request.request.headers.get('Authorization'))
+            .toBe('Bearer test-access-token');
+
+        request.flush({});
+    });
+
+    it('does not attach a token to similarly named audit paths', () => {
+        http.get('/api/audit-logs-extra').subscribe();
+
+        const request = httpMock.expectOne('/api/audit-logs-extra');
+
+        expect(request.request.headers.has('Authorization'))
+            .toBe(false);
+
+        expect(authServiceMock.getAccessToken)
+            .not.toHaveBeenCalled();
+
+        request.flush({});
+    });
+
 });
