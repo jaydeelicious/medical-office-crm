@@ -18,6 +18,7 @@ import {
   LucideMenu,
   LucideLogIn,
   LucideLogOut,
+  LucideClipboardList,
 } from '@lucide/angular';
 import { filter } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
@@ -38,6 +39,7 @@ import { AuthService } from '../../core/auth/auth.service';
     LucideMenu,
     LucideLogIn,
     LucideLogOut,
+    LucideClipboardList,
   ],
   templateUrl: './app-layout.html',
   styleUrl: './app-layout.scss'
@@ -77,6 +79,10 @@ export class AppLayout {
       label: 'Appointments', 
       path: '/appointments', 
     },
+    {
+      label: 'Audit History',
+      path: '/audit-history',
+    }
   ];
 
   constructor() {

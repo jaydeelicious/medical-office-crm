@@ -57,6 +57,7 @@ export class AuthService {
             '/patients',
             '/doctors',
             '/appointments',
+            '/audit-history',
         ];
 
         return allowedPaths.includes(path);

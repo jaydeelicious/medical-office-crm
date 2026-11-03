@@ -103,6 +103,12 @@ export const routes: Routes = [
                     import('./features/appointments/appointment-details/appointment-details')
                         .then((m) => m.AppointmentDetails),
             },
+            {
+                path: 'audit-history',
+                loadComponent: () =>
+                    import('./features/audit-history/audit-history')
+                        .then((m) => m.AuditHistory),
+            },
         ],
     },
     {

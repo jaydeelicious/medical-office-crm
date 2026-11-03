@@ -1,0 +1,245 @@
+
+<section class="audit-page">
+  <header class="page-heading">
+    <div>
+      <div class="eyebrow">Administration / Activity</div>
+      <h1>Audit History</h1>
+      <p>Review changes made to medical office records.</p>
+    </div>
+
+    <div class="heading-icon" aria-hidden="true">
+      <span>◎</span>
+    </div>
+  </header>
+
+  <section class="filters-card" aria-label="Audit filters">
+    <div class="section-heading">
+      <div>
+        <h2>Filter activity</h2>
+        <p>Narrow down recorded actions and events.</p>
+      </div>
+    </div>
+
+    <form (submit)="$event.preventDefault(); applyFilters()">
+      <div class="filter-grid">
+        <div class="filter-field">
+          <label for="entityType">Entity type</label>
+          <select
+            id="entityType"
+            [value]="entityType()"
+            (change)="entityType.set($any($event.target).value)"
+            [disabled]="isLoading()"
+          >
+            <option value="">All entities</option>
+            <option value="Patient">Patients</option>
+            <option value="Doctor">Doctors</option>
+            <option value="Appointment">Appointments</option>
+          </select>
+        </div>
+
+        <div class="filter-field">
+          <label for="action">Action</label>
+          <select
+            id="action"
+            [value]="action()"
+            (change)="action.set($any($event.target).value)"
+            [disabled]="isLoading()"
+          >
+            <option value="">All actions</option>
+            <option value="Created">Created</option>
+            <option value="Updated">Updated</option>
+            <option value="Deleted">Deleted</option>
+          </select>
+        </div>
+
+        <div class="filter-field">
+          <label for="fromDate">From date</label>
+          <input
+            id="fromDate"
+            type="date"
+            [value]="fromDate()"
+            (change)="fromDate.set($any($event.target).value)"
+            [disabled]="isLoading()"
+          />
+        </div>
+
+        <div class="filter-field">
+          <label for="toDate">To date</label>
+          <input
+            id="toDate"
+            type="date"
+            [value]="toDate()"
+            (change)="toDate.set($any($event.target).value)"
+            [disabled]="isLoading()"
+          />
+        </div>
+
+        <div class="filter-field">
+          <label for="entityId">Entity ID</label>
+          <input
+            id="entityId"
+            type="text"
+            placeholder="Filter by record ID"
+            [value]="entityId()"
+            (input)="entityId.set($any($event.target).value)"
+            [disabled]="isLoading()"
+          />
+        </div>
+
+        <div class="filter-field">
+          <label for="userId">User ID</label>
+          <input
+            id="userId"
+            type="text"
+            placeholder="Filter by user"
+            [value]="userId()"
+            (input)="userId.set($any($event.target).value)"
+            [disabled]="isLoading()"
+          />
+        </div>
+      </div>
+
+      <div class="filter-actions">
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="clearFilters()"
+          [disabled]="isLoading()"
+        >
+          Clear filters
+        </button>
+
+        <button
+          type="submit"
+          class="primary-button"
+          [disabled]="isLoading()"
+        >
+          Apply filters
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <section class="history-section" aria-label="Audit events">
+    <div class="history-heading">
+      <div>
+        <h2>Activity log</h2>
+        <p>Latest recorded changes, newest first.</p>
+      </div>
+
+      @if (!isLoading() && !errorMessage()) {
+        <span class="record-count">
+          {{ totalCount() }} records
+        </span>
+      }
+    </div>
+
+    @if (isLoading()) {
+      <app-loading-indicator
+        message="Loading audit history..."
+      />
+    } @else if (errorMessage(); as message) {
+      <app-error-message
+        [message]="message"
+        [retryable]="canRetry()"
+        (retry)="loadAuditLogs()"
+      />
+    } @else if (logs().length === 0) {
+      <app-empty-state
+        title="No audit events found"
+        description="No activity matches the selected filters."
+      />
+    } @else {
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Date & Time</th>
+              <th scope="col">Action</th>
+              <th scope="col">Entity</th>
+              <th scope="col">Record ID</th>
+              <th scope="col">Performed by</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            @for (log of logs(); track log.id) {
+              <tr>
+                <td>
+                  <div class="date-primary">
+                    {{ log.occurredAtUtc | date:'mediumDate' }}
+                  </div>
+                  <div class="date-secondary">
+                    {{ log.occurredAtUtc | date:'mediumTime' }}
+                  </div>
+                </td>
+
+                <td>
+                  <span
+                    class="action-badge"
+                    [class]="getActionClass(log.action)"
+                  >
+                    <span class="action-dot"></span>
+                    {{ log.action }}
+                  </span>
+                </td>
+
+                <td>
+                  <span class="entity-name">
+                    {{ log.entityType }}
+                  </span>
+                </td>
+
+                <td>
+                  <code
+                    class="record-id"
+                    [title]="log.entityId"
+                  >
+                    {{ log.entityId }}
+                  </code>
+                </td>
+
+                <td>
+                  <span class="user-name">
+                    {{ log.userId ?? 'System' }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <footer class="pagination">
+        <p>
+          Showing {{ resultStart() }}–{{ resultEnd() }}
+          of {{ totalCount() }} records
+        </p>
+
+        <div class="pagination-controls">
+          <button
+            type="button"
+            (click)="previousPage()"
+            [disabled]="!hasPreviousPage() || isLoading()"
+            aria-label="Previous page"
+          >
+            Previous
+          </button>
+
+          <span>
+            Page {{ page() }} of {{ totalPages() }}
+          </span>
+
+          <button
+            type="button"
+            (click)="nextPage()"
+            [disabled]="!hasNextPage() || isLoading()"
+            aria-label="Next page"
+          >
+            Next
+          </button>
+        </div>
+      </footer>
+    }
+  </section>
+</section>
