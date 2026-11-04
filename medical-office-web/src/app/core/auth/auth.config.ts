@@ -1,17 +1,32 @@
 
-import { LogLevel, OpenIdConfiguration } from 'angular-auth-oidc-client';
+import {
+  LogLevel,
+  OpenIdConfiguration,
+} from 'angular-auth-oidc-client';
+
+import { getRuntimeConfig } from './runtime-config';
+
+const runtimeConfig = getRuntimeConfig();
+
+const origin = window.location.origin;
 
 export const authConfig: OpenIdConfiguration = {
-  authority: 'https://localhost:7234',
+  authority: runtimeConfig.authority,
+
   clientId: 'medicaloffice-angular',
-  redirectUrl: 'http://localhost:4200/auth/callback',
+
+  redirectUrl: `${origin}/auth/callback`,
+
   postLoginRoute: '/auth/complete',
-  postLogoutRedirectUri: 'http://localhost:4200/',
+
+  postLogoutRedirectUri: `${origin}/`,
+
   scope: 'openid profile email offline_access',
+
   responseType: 'code',
+
   autoUserInfo: false,
 
-  // Renew access tokens using refresh tokens.
   silentRenew: true,
   useRefreshToken: true,
   renewTimeBeforeTokenExpiresInSeconds: 60,

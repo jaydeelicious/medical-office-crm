@@ -10,3 +10,6 @@ obj/
 # Local AI tooling configuration
 **/.codex/config.toml
 **/.mcp.json
+
+# Docker build logs
+docker-build.log
