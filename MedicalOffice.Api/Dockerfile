@@ -1,30 +1,43 @@
-# See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
-# This stage is used when running from VS in fast mode (Default for Debug configuration)
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
-USER $APP_UID
-WORKDIR /app
-EXPOSE 8080
-EXPOSE 8081
+# syntax=docker/dockerfile:1
 
-
-# This stage is used to build the service project
+# Stage 1: Build and publish
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
-ARG BUILD_CONFIGURATION=Release
+
 WORKDIR /src
-COPY ["medical-office-crm/medical-office-crm.csproj", "medical-office-crm/"]
-RUN dotnet restore "./medical-office-crm/medical-office-crm.csproj"
+
+# Copy project files for dependency caching
+COPY MedicalOffice.Domain/MedicalOffice.Domain.csproj MedicalOffice.Domain/
+COPY MedicalOffice.Application/MedicalOffice.Application.csproj MedicalOffice.Application/
+COPY MedicalOffice.Infrastructure/MedicalOffice.Infrastructure.csproj MedicalOffice.Infrastructure/
+COPY MedicalOffice.Api/MedicalOffice.Api.csproj MedicalOffice.Api/
+
+# Restore dependencies
+RUN dotnet restore MedicalOffice.Api/MedicalOffice.Api.csproj
+
+# Copy remaining source code
 COPY . .
-WORKDIR "/src/medical-office-crm"
-RUN dotnet build "./medical-office-crm.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
-# This stage is used to publish the service project to be copied to the final stage
-FROM build AS publish
-ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./medical-office-crm.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+# Publish in Release configuration
+RUN dotnet publish MedicalOffice.Api/MedicalOffice.Api.csproj \
+    --configuration Release \
+    --output /app/publish \
+    --no-restore \
+    /p:UseAppHost=false
 
-# This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
-FROM base AS final
+# Stage 2: Runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+
 WORKDIR /app
-COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "medical-office-crm.dll"]
+
+ENV ASPNETCORE_HTTP_PORTS=8080
+ENV ASPNETCORE_ENVIRONMENT=Production
+
+COPY --from=build /app/publish .
+
+# Run as non-root user
+USER $APP_UID
+
+EXPOSE 8080
+
+ENTRYPOINT ["dotnet", "MedicalOffice.Api.dll"]
