@@ -11,14 +11,18 @@ describe('AppLayout authentication controls', () => {
     isAuthenticated: false,
   });
 
+  const auditVisibility = new BehaviorSubject(false);
+
   const authServiceMock = {
     login: vi.fn(),
     logout: vi.fn(),
     isAuthenticated$: authenticationState.asObservable(),
+    canViewAuditHistory$: auditVisibility.asObservable(),
   };
 
   beforeEach(async () => {
     authenticationState.next({ isAuthenticated: false });
+    auditVisibility.next(false);
     vi.clearAllMocks();
 
     await TestBed.configureTestingModule({
@@ -93,5 +97,73 @@ describe('AppLayout authentication controls', () => {
 
     expect(authServiceMock.logout)
       .toHaveBeenCalledOnce();
+  });
+
+  it('hides audit history from non-admin users', () => {
+    authenticationState.next({
+      isAuthenticated: true,
+    });
+
+    auditVisibility.next(false);
+
+    const fixture = TestBed.createComponent(AppLayout);
+    fixture.detectChanges();
+
+    const auditLink = fixture.nativeElement.querySelector(
+      'a[href="/audit-history"]',
+    );
+
+    expect(auditLink).toBeNull();
+  });
+
+  it('shows audit history to administrators', () => {
+    authenticationState.next({
+      isAuthenticated: true,
+    });
+
+    auditVisibility.next(true);
+
+    const fixture = TestBed.createComponent(AppLayout);
+    fixture.detectChanges();
+
+    const auditLink = fixture.nativeElement.querySelector(
+      'a[href="/audit-history"]',
+    ) as HTMLAnchorElement;
+
+    expect(auditLink).not.toBeNull();
+    expect(auditLink.textContent).toContain('Audit History');
+  });
+
+  it('updates audit navigation when permissions change', () => {
+    authenticationState.next({
+      isAuthenticated: true,
+    });
+
+    const fixture = TestBed.createComponent(AppLayout);
+    fixture.detectChanges();
+
+    expect(
+      fixture.nativeElement.querySelector(
+        'a[href="/audit-history"]',
+      ),
+    ).toBeNull();
+
+    auditVisibility.next(true);
+    fixture.detectChanges();
+
+    expect(
+      fixture.nativeElement.querySelector(
+        'a[href="/audit-history"]',
+      ),
+    ).not.toBeNull();
+
+    auditVisibility.next(false);
+    fixture.detectChanges();
+
+    expect(
+      fixture.nativeElement.querySelector(
+        'a[href="/audit-history"]',
+      ),
+    ).toBeNull();
   });
 });

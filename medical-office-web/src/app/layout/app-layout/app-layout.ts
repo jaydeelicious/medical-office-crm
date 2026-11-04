@@ -51,6 +51,9 @@ export class AppLayout {
   protected readonly isAuthenticated$ = 
     this.authService.isAuthenticated$;
 
+  protected readonly canViewAuditHistory$ = 
+    this.authService.canViewAuditHistory$;
+
   protected login(): void {
     this.authService.login();
   }

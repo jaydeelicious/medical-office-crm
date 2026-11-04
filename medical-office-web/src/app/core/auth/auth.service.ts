@@ -1,6 +1,12 @@
 import { inject, Injectable } from '@angular/core';
 import { OidcSecurityService } from 'angular-auth-oidc-client';
 import { Observable } from 'rxjs';
+import {
+    catchError,
+    map,
+    of,
+    switchMap,
+} from 'rxjs';
 
 const RETURN_URL_KEY = 'medicaloffice.auth.returnUrl';
 
@@ -12,6 +18,42 @@ export class AuthService {
 
     readonly isAuthenticated$ = 
         this.oidcSecurityService.isAuthenticated$;
+
+    readonly canViewAuditHistory$ = this.isAuthenticated$.pipe(
+        switchMap(({ isAuthenticated }) => {
+            if (!isAuthenticated) {
+                return of(false);
+            }
+
+            return this.oidcSecurityService
+                .getPayloadFromAccessToken()
+                .pipe(
+                    map((payload: unknown) => {
+                        if (
+                            typeof payload !== 'object' ||
+                            payload === null ||
+                            Array.isArray(payload)
+                        ) {
+                            return false;
+                        }
+
+                        const claims = payload as Record<string, unknown>;
+                        const roles = claims['role'];
+
+                        if (typeof roles === 'string') {
+                            return roles === 'Admin';
+                        }
+
+                        if (Array.isArray(roles)) {
+                            return roles.includes('Admin');
+                        }
+
+                        return false;
+                    }),
+                    catchError(() => of(false)),
+                );
+        }),
+    );
 
     login(returnUrl?: string): void {
         if (returnUrl && this.isSafeReturnUrl(returnUrl)) {
