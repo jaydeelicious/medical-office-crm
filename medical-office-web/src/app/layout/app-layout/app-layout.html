@@ -1,10 +1,5 @@
-
 <div class="app-layout">
-  <aside
-    id="main-sidebar"
-    class="sidebar"
-    [class.sidebar-open]="menuOpen()"
-  >
+  <aside id="main-sidebar" class="sidebar" [class.sidebar-open]="menuOpen()">
     <a class="brand" routerLink="/dashboard" (click)="closeMenu()">
       <svg lucideHeartPulse aria-hidden="true"></svg>
       <span>MedicalOffice</span>
@@ -12,53 +7,45 @@
 
     <nav aria-label="Main navigation">
       @for (item of navigation; track item.path) {
-        <a
-          class="nav-link"
-          [routerLink]="item.path"
-          routerLinkActive="active"
-          (click)="closeMenu()"
-        >
-          @switch (item.path) {
-            @case ('/dashboard') {
-              <svg lucideLayoutDashboard aria-hidden="true"></svg>
-            }
-            @case ('/patients') {
-              <svg lucideUsersRound aria-hidden="true"></svg>
-            }
-            @case ('/doctors') {
-              <svg lucideStethoscope aria-hidden="true"></svg>
-            }
-            @case ('/appointments') {
-              <svg lucideCalendarDays aria-hidden="true"></svg>
-            }
-          }
+      @if (
+      item.path !== '/audit-history' ||
+      (canViewAuditHistory$ | async)
+      ) {
+      <a class="nav-link" [routerLink]="item.path" routerLinkActive="active" (click)="closeMenu()">
+        @switch (item.path) {
+        @case ('/dashboard') {
+        <svg lucideLayoutDashboard aria-hidden="true"></svg>
+        }
+        @case ('/patients') {
+        <svg lucideUsersRound aria-hidden="true"></svg>
+        }
+        @case ('/doctors') {
+        <svg lucideStethoscope aria-hidden="true"></svg>
+        }
+        @case ('/appointments') {
+        <svg lucideCalendarDays aria-hidden="true"></svg>
+        }
+        @case ('/audit-history') {
+        <svg lucideClipboardList aria-hidden="true"></svg>
+        }
+        }
 
-          <span>{{ item.label }}</span>
-        </a>
+        <span>{{ item.label }}</span>
+      </a>
+      }
       }
     </nav>
   </aside>
 
   @if (menuOpen()) {
-    <button
-      class="sidebar-backdrop"
-      type="button"
-      aria-label="Close navigation menu"
-      (click)="closeMenu()"
-    ></button>
+  <button class="sidebar-backdrop" type="button" aria-label="Close navigation menu" (click)="closeMenu()"></button>
   }
 
   <div class="main-container">
     <header class="app-header">
       <div class="header-left">
-        <button
-          class="menu-toggle"
-          type="button"
-          aria-controls="main-sidebar"
-          [attr.aria-expanded]="menuOpen()"
-          aria-label="Toggle navigation menu"
-          (click)="toggleMenu()"
-        >
+        <button class="menu-toggle" type="button" aria-controls="main-sidebar" [attr.aria-expanded]="menuOpen()"
+          aria-label="Toggle navigation menu" (click)="toggleMenu()">
           <svg lucideMenu aria-hidden="true"></svg>
         </button>
 
@@ -71,32 +58,24 @@
         </button>
         <svg lucideCircleUserRound aria-hidden="true"></svg>
       </div> -->
-      
-      
-        
-        <div class="header-right">
+
+
+
+      <div class="header-right">
         @if (isAuthenticated$ | async; as auth) {
-            @if (auth.isAuthenticated) {
-            <button
-                type="button"
-                class="auth-button"
-                (click)="logout()"
-            >
-                <svg lucideLogOut aria-hidden="true"></svg>
-                <span>Logout</span>
-            </button>
-            } @else {
-            <button
-                type="button"
-                class="auth-button"
-                (click)="login()"
-            >
-                <svg lucideLogIn aria-hidden="true"></svg>
-                <span>Login</span>
-            </button>
-            }
+        @if (auth.isAuthenticated) {
+        <button type="button" class="auth-button" (click)="logout()">
+          <svg lucideLogOut aria-hidden="true"></svg>
+          <span>Logout</span>
+        </button>
+        } @else {
+        <button type="button" class="auth-button" (click)="login()">
+          <svg lucideLogIn aria-hidden="true"></svg>
+          <span>Login</span>
+        </button>
         }
-        </div>
+        }
+      </div>
 
 
 

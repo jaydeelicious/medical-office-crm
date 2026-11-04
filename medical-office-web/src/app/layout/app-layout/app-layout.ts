@@ -18,6 +18,7 @@ import {
   LucideMenu,
   LucideLogIn,
   LucideLogOut,
+  LucideClipboardList,
 } from '@lucide/angular';
 import { filter } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
@@ -38,6 +39,7 @@ import { AuthService } from '../../core/auth/auth.service';
     LucideMenu,
     LucideLogIn,
     LucideLogOut,
+    LucideClipboardList,
   ],
   templateUrl: './app-layout.html',
   styleUrl: './app-layout.scss'
@@ -48,6 +50,9 @@ export class AppLayout {
 
   protected readonly isAuthenticated$ = 
     this.authService.isAuthenticated$;
+
+  protected readonly canViewAuditHistory$ = 
+    this.authService.canViewAuditHistory$;
 
   protected login(): void {
     this.authService.login();
@@ -77,6 +82,10 @@ export class AppLayout {
       label: 'Appointments', 
       path: '/appointments', 
     },
+    {
+      label: 'Audit History',
+      path: '/audit-history',
+    }
   ];
 
   constructor() {

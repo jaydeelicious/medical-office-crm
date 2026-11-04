@@ -40,7 +40,8 @@ function isTrustedApiUrl(url: string): boolean {
     const trustedPaths = [
         '/api/patients',
         '/api/doctors',
-        '/api/appointments'
+        '/api/appointments',
+        '/api/audit-logs',
     ];
 
     return trustedPaths.some(

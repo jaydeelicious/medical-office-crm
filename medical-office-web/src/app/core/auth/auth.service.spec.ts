@@ -14,6 +14,7 @@ describe('AuthService', () => {
     authorize: vi.fn(),
     logoff: vi.fn().mockReturnValue(of({})),
     getAccessToken: vi.fn().mockReturnValue(of('test-access-token')),
+    getPayloadFromAccessToken: vi.fn().mockReturnValue(of({})),
   };
 
   let service: AuthService;
@@ -31,6 +32,8 @@ describe('AuthService', () => {
     oidcSecurityServiceMock.logoff.mockReturnValue(
       of({}),
     );
+
+    oidcSecurityServiceMock.getPayloadFromAccessToken.mockReturnValue(of({}));
 
     TestBed.configureTestingModule({
       providers: [
@@ -225,4 +228,56 @@ describe('AuthService', () => {
     expect(service.consumeReturnUrl())
       .toBe('/appointments#calendar');
   });
+
+  it.each([
+    [{ role: 'Admin' }, true],
+    [{ role: ['Admin', 'Doctor'] }, true],
+    [{ role: 'Doctor' }, false],
+    [{ role: ['Doctor'] }, false],
+    [{}, false],
+  ])(
+    'checks Admin access for token claims',
+    async (claims, expected) => {
+      oidcSecurityServiceMock.getPayloadFromAccessToken
+        .mockReturnValue(of(claims));
+
+      authenticationState.next({
+        isAuthenticated: true,
+      });
+
+      const canView = await firstValueFrom(
+        service.canViewAuditHistory$,
+      );
+
+      expect(canView).toBe(expected);
+    },
+  );
+
+  it('hides audit history when unauthenticated', async () => {
+    const canView = await firstValueFrom(
+      service.canViewAuditHistory$,
+    );
+
+    expect(canView).toBe(false);
+
+    expect(
+      oidcSecurityServiceMock.getPayloadFromAccessToken,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('handles missing role information safely', async () => {
+    oidcSecurityServiceMock.getPayloadFromAccessToken
+      .mockReturnValue(of(null));
+
+    authenticationState.next({
+      isAuthenticated: true,
+    });
+
+    const canView = await firstValueFrom(
+      service.canViewAuditHistory$,
+    );
+
+    expect(canView).toBe(false);
+  });
+
 });
