@@ -1,0 +1,37 @@
+
+# Dependencies
+node_modules/
+
+# Angular outputs and caches
+dist/
+.angular/
+coverage/
+out-tsc/
+
+# Version control
+.git/
+.gitignore
+
+# Editor settings
+.vscode/
+.idea/
+
+# Local secrets
+.env
+.env.*
+*.pem
+*.key
+*.pfx
+
+# Logs
+*.log
+npm-debug.log*
+
+# Docker configuration not needed in build context
+Dockerfile
+docker-compose*.yml
+docker-compose*.yaml
+
+# Local OS files
+.DS_Store
+Thumbs.db
