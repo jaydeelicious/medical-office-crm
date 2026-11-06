@@ -22,3 +22,6 @@ docker-backups/
 .env.*
 !.env.example
 docker-backups/
+
+# Local Docker HTTPS certificates
+/docker-local/
