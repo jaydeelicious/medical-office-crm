@@ -54,6 +54,8 @@ services:
 
       OpenIddict__Clients__SeedOnStartup: "true"
       DevelopmentTestUser__SeedOnStartup: "false"
+      
+      ReverseProxy__KnownProxy: "172.30.77.10"
 
     ports:
       - "127.0.0.1:8080:8080"
@@ -81,8 +83,18 @@ services:
     depends_on:
       medicaloffice-api:
         condition: service_started
+    
+    networks:
+      default:
+        ipv4_address: 172.30.77.10
 
     restart: unless-stopped
 
 volumes:
   sqlserver-data:
+  
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.30.77.0/24

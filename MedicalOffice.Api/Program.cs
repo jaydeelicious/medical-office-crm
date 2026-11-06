@@ -25,7 +25,37 @@ using Microsoft.AspNetCore.Mvc;
 
 using MedicalOffice.Infrastructure.Persistence.Interceptors;
 
+using Microsoft.AspNetCore.HttpOverrides;
+using System.Net;
+using System.Runtime.InteropServices;
+
 var builder = WebApplication.CreateBuilder(args);
+
+var trustedProxy = builder.Configuration["ReverseProxy:KnownProxy"];
+
+if (!string.IsNullOrWhiteSpace(trustedProxy))
+{
+    if (!IPAddress.TryParse(trustedProxy, out var proxyAddress))
+    {
+        throw new InvalidOperationException("ReverseProxy:KnownProxy must be a valid IP address.");
+    }
+
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders =
+            ForwardedHeaders.XForwardedFor |
+            ForwardedHeaders.XForwardedProto;
+
+        options.ForwardLimit = 1;
+
+        options.KnownProxies.Add(proxyAddress);
+
+        if (proxyAddress.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+        {
+            options.KnownProxies.Add(proxyAddress.MapToIPv6());
+        }
+    });
+}
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
@@ -174,6 +204,11 @@ builder.Services.AddAuthorization(options =>
 });
 
 var app = builder.Build();
+
+if (!string.IsNullOrWhiteSpace(trustedProxy))
+{
+    app.UseForwardedHeaders();
+}
 
 if (app.Configuration.GetValue(
     "OpenIddict:Clients:SeedOnStartup", true))
