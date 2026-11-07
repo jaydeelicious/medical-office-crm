@@ -29,6 +29,17 @@ pipeline {
             }
         }
 
+        stage('Backend Restore') {
+            steps {
+                sh 'dotnet restore medical-office-crm.slnx'
+            }
+        }
+
+        stage('Backend Build') {
+            steps {
+                sh 'dotnet build medical-office-crm.slnx --no-restore --configuration Release'
+            }
+        }
     }
 
     post {
