@@ -13,6 +13,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         libicu-dev \
         ca-certificates \
+        docker.io \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy .NET 10 SDK from the official Microsoft image.
