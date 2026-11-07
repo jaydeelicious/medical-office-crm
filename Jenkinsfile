@@ -42,6 +42,27 @@ pipeline {
                 sh 'dotnet build medical-office-crm.slnx --no-restore --configuration Release'
             }
         }
+
+        stage('Backend Tests') {
+            steps {
+                withCredentials([
+                    string(
+                        credentialsId: 'medicaloffice-jenkins-sql-password',
+                        variable: 'SQL_PASSWORD'
+                    )
+                ]) {
+                    sh '''
+                        set +x
+
+                        export MEDICALOFFICE_TEST_SQL_CONNECTION="Server=medicaloffice-jenkins-sql,1433;User Id=sa;Password=${SQL_PASSWORD};Encrypt=True;TrustServerCertificate=True;"
+
+                        dotnet test medical-office-crm.slnx \
+                            --no-build \
+                            --configuration Release
+                    '''
+                }
+            }
+        }
     }
 
     post {
