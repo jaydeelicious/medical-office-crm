@@ -80,7 +80,7 @@ jobs:
           cache-dependency-path: medical-office-web/package-lock.json
 
       - name: Install dependencies
-        run: npm CI
+        run: npm ci
 
       - name: Run Angular tests
         run: npm test -- --watch=false
