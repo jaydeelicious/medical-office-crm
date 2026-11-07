@@ -19,8 +19,26 @@ public sealed class SqlServerWebApplicationFactory
     private readonly string _databaseName =
         $"MedicalOffice_ConcurrencyTests_{Guid.NewGuid():N}";
 
-    private string ConnectionString =>
-        $@"Server=(localdb)\MSSQLLocalDB;Database={_databaseName};Trusted_Connection=True;TrustServerCertificate=True;";
+    private string ConnectionString
+    {
+        get
+        {
+            var configuredConnection = Environment.GetEnvironmentVariable("MEDICALOFFICE_TEST_SQL_CONNECTION");
+
+            var baseConnection = !string.IsNullOrWhiteSpace(
+                configuredConnection)
+                ? configuredConnection
+                : @"Server=(localdb)\MSSQLLocalDB;Integrated Security=True;TrustServerCertificate=True;";
+
+            var builder = new Microsoft.Data.SqlClient
+                .SqlConnectionStringBuilder(baseConnection)
+            {
+                InitialCatalog = _databaseName
+            };
+
+            return builder.ConnectionString;
+        }
+    }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {

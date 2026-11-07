@@ -19,6 +19,25 @@ jobs:
     name: Backend - Build & Test
     runs-on: ubuntu-latest
 
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_PID: Developer
+          MSSQL_SA_PASSWORD: "CITestOnly_2026_StrongPassword!"
+        ports: 
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'CITestOnly_2026_StrongPassword!' -C -Q 'SELECT 1' -b"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 20
+          --health-start-period 40s
+    
+    env:
+      MEDICALOFFICE_TEST_SQL_CONNECTION: "Server=localhost,1433;User Id=sa;Password=CITestOnly_2026_StrongPassword!;Encrypt=True;TrustServerCertificate=True;"
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
