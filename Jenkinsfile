@@ -21,6 +21,14 @@ pipeline {
                 sh 'pwd'
             }
         }
+
+        
+        stage('Verify .NET SDK') {
+            steps {
+                sh 'dotnet --info'
+            }
+        }
+
     }
 
     post {

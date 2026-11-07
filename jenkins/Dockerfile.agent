@@ -1,0 +1,22 @@
+# Copy the .NET 10 SDK from the official Microsoft image.
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS dotnet
+
+# Base image with Jenkins inbound agent and Java.
+FROM jenkins/inbound-agent:jdk21
+
+USER root
+
+# Install native dependencies required by .NET.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        libicu-dev \
+        ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy .NET 10 SDK from the official Microsoft image.
+COPY --from=dotnet /usr/share/dotnet /usr/share/dotnet
+
+ENV DOTNET_ROOT=/usr/share/dotnet
+ENV PATH="/usr/share/dotnet:${PATH}"
+
+USER jenkins
