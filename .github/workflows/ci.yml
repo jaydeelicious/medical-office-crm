@@ -1,0 +1,40 @@
+name: Medical Office CRM CI
+
+on: 
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend - Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v6
+        with: 
+          donet-version: '10.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore medical-office-crm.slnx
+
+      - name: Build solution
+        run: dotnet build medical-office-crm.slnx --no-restore --configuration Release
+
+      - name: Run backend tests
+        run: dotnet test medical-office-crm.slnx --no-build --configuration Release
