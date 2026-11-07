@@ -13,3 +13,15 @@ obj/
 
 # Docker build logs
 docker-build.log
+
+# Local Docker database backups
+docker-backups/
+
+# Local Docker configuration and database backups
+.env
+.env.*
+!.env.example
+docker-backups/
+
+# Local Docker HTTPS certificates
+/docker-local/

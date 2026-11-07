@@ -25,7 +25,40 @@ using Microsoft.AspNetCore.Mvc;
 
 using MedicalOffice.Infrastructure.Persistence.Interceptors;
 
+using Microsoft.AspNetCore.HttpOverrides;
+using System.Net;
+using System.Runtime.InteropServices;
+
+using System.IO;
+using Microsoft.AspNetCore.DataProtection;
+
 var builder = WebApplication.CreateBuilder(args);
+
+var trustedProxy = builder.Configuration["ReverseProxy:KnownProxy"];
+
+if (!string.IsNullOrWhiteSpace(trustedProxy))
+{
+    if (!IPAddress.TryParse(trustedProxy, out var proxyAddress))
+    {
+        throw new InvalidOperationException("ReverseProxy:KnownProxy must be a valid IP address.");
+    }
+
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders =
+            ForwardedHeaders.XForwardedFor |
+            ForwardedHeaders.XForwardedProto;
+
+        options.ForwardLimit = 1;
+
+        options.KnownProxies.Add(proxyAddress);
+
+        if (proxyAddress.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+        {
+            options.KnownProxies.Add(proxyAddress.MapToIPv6());
+        }
+    });
+}
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
@@ -95,7 +128,22 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
 // Required by Identity's data protection token providers
-builder.Services.AddDataProtection();
+var dataProtection = builder.Services.AddDataProtection();
+
+var keyDirectory = builder.Configuration["DataProtection:KeysDirectory"];
+
+if (!string.IsNullOrWhiteSpace(keyDirectory))
+{
+    if (!Path.IsPathFullyQualified(keyDirectory))
+    {
+        throw new InvalidOperationException("DataProtection:KeysDirectory must be an absolute path.");
+    }
+
+    dataProtection
+        .SetApplicationName("MedicalOfficeCRM")
+        .PersistKeysToFileSystem(
+            new DirectoryInfo(keyDirectory));
+}
 
 builder.Services
     .AddIdentityCore<ApplicationUser>(options =>
@@ -174,6 +222,11 @@ builder.Services.AddAuthorization(options =>
 });
 
 var app = builder.Build();
+
+if (!string.IsNullOrWhiteSpace(trustedProxy))
+{
+    app.UseForwardedHeaders();
+}
 
 if (app.Configuration.GetValue(
     "OpenIddict:Clients:SeedOnStartup", true))

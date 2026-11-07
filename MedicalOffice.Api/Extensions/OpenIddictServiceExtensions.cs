@@ -13,6 +13,24 @@ namespace MedicalOffice.Api.Extensions
             services.AddOpenIddict()
                 .AddServer(options =>
                 {
+                    var issuer = configuration["OpenIddict:Issuer"]; 
+
+                    if (!string.IsNullOrWhiteSpace(issuer))
+                    {
+                        if (!Uri.TryCreate(
+                                issuer,
+                                UriKind.Absolute,
+                                out var issuerUri) ||
+                           issuerUri.Scheme != Uri.UriSchemeHttps ||
+                           !string.IsNullOrEmpty(issuerUri.Query) ||
+                           !string.IsNullOrEmpty(issuerUri.Fragment))
+                        {
+                            throw new InvalidOperationException("OpenIddict:Issuer must be an absolute HTTPS URL.");
+                        }
+
+                        options.SetIssuer(issuerUri);
+                    }
+
                     // OAuth 2.0 / OpenID Connect endpoints
                     options.SetAuthorizationEndpointUris("/connect/authorize");
                     options.SetTokenEndpointUris("/connect/token");
@@ -38,30 +56,27 @@ namespace MedicalOffice.Api.Extensions
                     options.SetRefreshTokenLifetime(TimeSpan.FromDays(7));
 
                     // Signing and encryption credentials
-                    if (environment.IsDevelopment())
-                    {
-                        options.AddDevelopmentEncryptionCertificate();
-                        options.AddDevelopmentSigningCertificate();
-                    }
-                    else
-                    {
-                        var signingCertificate = LoadCertificate(
-                            configuration,
-                            "Signing");
+                    var useConfiguredCertificates =
+                        configuration.GetValue<bool>("OpenIddict:Certificates:UseConfiguredCertificates");
 
-                        var encryptionCertificate = LoadCertificate(
-                            configuration,
-                            "Encryption");
+                    if (useConfiguredCertificates || !environment.IsDevelopment())
+                    {
+                        var signingCertificate = LoadCertificate(configuration, "Signing");
 
-                        if (signingCertificate.Thumbprint == 
-                            encryptionCertificate.Thumbprint)
+                        var encryptionCertificate = LoadCertificate(configuration, "Encryption");
+
+                        if (signingCertificate.Thumbprint == encryptionCertificate.Thumbprint)
                         {
-                            throw new InvalidOperationException(
-                                "Signing and encryption certificates must be different.");
+                            throw new InvalidOperationException("Signing and encryption certificates must be different.");
                         }
 
                         options.AddSigningCertificate(signingCertificate);
                         options.AddEncryptionCertificate(encryptionCertificate);
+                    }
+                    else
+                    {
+                        options.AddDevelopmentEncryptionCertificate();
+                        options.AddDevelopmentSigningCertificate();
                     }
 
                     // ASP.NET Core integration

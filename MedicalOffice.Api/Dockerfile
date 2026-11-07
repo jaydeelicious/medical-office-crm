@@ -35,6 +35,10 @@ ENV ASPNETCORE_ENVIRONMENT=Production
 
 COPY --from=build /app/publish .
 
+# Prepare the Data Protection directory for the non-root user.
+RUN mkdir -p /app/data-protection-keys \
+    && chown -R $APP_UID:$APP_UID /app/data-protection-keys
+
 # Run as non-root user
 USER $APP_UID
 
