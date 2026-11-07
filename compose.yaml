@@ -61,6 +61,11 @@ services:
       OpenIddict__Clients__Angular__RedirectUri: "https://localhost:8443/auth/callback"
       OpenIddict__Clients__Angular__PostLogoutRedirectUri: "https://localhost:8443/"
       OpenIddict__Issuer: "https://localhost:8443/"
+      
+      DataProtection__KeysDirectory: "/app/data-protection-keys"
+    
+    volumes:
+      - data-protection-keys:/app/data-protection-keys
 
     ports:
       - "127.0.0.1:8080:8080"
@@ -98,6 +103,7 @@ services:
 
 volumes:
   sqlserver-data:
+  data-protection-keys:
   
 networks:
   default:

@@ -29,6 +29,9 @@ using Microsoft.AspNetCore.HttpOverrides;
 using System.Net;
 using System.Runtime.InteropServices;
 
+using System.IO;
+using Microsoft.AspNetCore.DataProtection;
+
 var builder = WebApplication.CreateBuilder(args);
 
 var trustedProxy = builder.Configuration["ReverseProxy:KnownProxy"];
@@ -125,7 +128,22 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
 // Required by Identity's data protection token providers
-builder.Services.AddDataProtection();
+var dataProtection = builder.Services.AddDataProtection();
+
+var keyDirectory = builder.Configuration["DataProtection:KeysDirectory"];
+
+if (!string.IsNullOrWhiteSpace(keyDirectory))
+{
+    if (!Path.IsPathFullyQualified(keyDirectory))
+    {
+        throw new InvalidOperationException("DataProtection:KeysDirectory must be an absolute path.");
+    }
+
+    dataProtection
+        .SetApplicationName("MedicalOfficeCRM")
+        .PersistKeysToFileSystem(
+            new DirectoryInfo(keyDirectory));
+}
 
 builder.Services
     .AddIdentityCore<ApplicationUser>(options =>
