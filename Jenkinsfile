@@ -75,7 +75,9 @@ pipeline {
         stage('Frontend Tests') {
             steps {
                 dir('medical-office-web') {
-                    sh 'npm test -- --watch=false'
+                    withEnv(['CI=true']) {
+                        sh 'npm test -- --watch=false --configuration ci'
+                    }
                 }
             }
         }
