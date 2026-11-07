@@ -13,6 +13,24 @@ namespace MedicalOffice.Api.Extensions
             services.AddOpenIddict()
                 .AddServer(options =>
                 {
+                    var issuer = configuration["OpenIddict:Issuer"]; 
+
+                    if (!string.IsNullOrWhiteSpace(issuer))
+                    {
+                        if (!Uri.TryCreate(
+                                issuer,
+                                UriKind.Absolute,
+                                out var issuerUri) ||
+                           issuerUri.Scheme != Uri.UriSchemeHttps ||
+                           !string.IsNullOrEmpty(issuerUri.Query) ||
+                           !string.IsNullOrEmpty(issuerUri.Fragment))
+                        {
+                            throw new InvalidOperationException("OpenIddict:Issuer must be an absolute HTTPS URL.");
+                        }
+
+                        options.SetIssuer(issuerUri);
+                    }
+
                     // OAuth 2.0 / OpenID Connect endpoints
                     options.SetAuthorizationEndpointUris("/connect/authorize");
                     options.SetTokenEndpointUris("/connect/token");
