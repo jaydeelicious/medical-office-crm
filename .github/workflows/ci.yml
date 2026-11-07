@@ -57,3 +57,36 @@ jobs:
 
       - name: Run backend tests
         run: dotnet test medical-office-crm.slnx --no-build --configuration Release
+
+  frontend:
+    name: Frontend _ Test, Lint & Build
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: medical-office-web
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+        
+      - name: Setup Node.jobs
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: medical-office-web/package-lock.json
+
+      - name: Install dependencies
+        run: npm CI
+
+      - name: Run Angular tests
+        run: npm test -- --watch=false
+
+      - name: Run Angular lint
+        run: npm run lint
+
+      - name: Build Angular application
+        run: npm run build -- --configuration production
