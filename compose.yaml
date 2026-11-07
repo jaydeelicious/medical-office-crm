@@ -63,9 +63,18 @@ services:
       OpenIddict__Issuer: "https://localhost:8443/"
       
       DataProtection__KeysDirectory: "/app/data-protection-keys"
+      
+      OpenIddict__Certificates__UseConfiguredCertificates: "true"
+
+      OpenIddict__Certificates__Signing__Path: "/app/openiddict-certs/signing.pfx"
+      OpenIddict__Certificates__Signing__Password: ${OPENIDDICT_SIGNING_CERT_PASSWORD:?Set OPENIDDICT_SIGNING_CERT_PASSWORD in .env}
+
+      OpenIddict__Certificates__Encryption__Path: "/app/openiddict-certs/encryption.pfx"
+      OpenIddict__Certificates__Encryption__Password: ${OPENIDDICT_ENCRYPTION_CERT_PASSWORD:?Set OPENIDDICT_ENCRYPTION_CERT_PASSWORD in .env}
     
     volumes:
       - data-protection-keys:/app/data-protection-keys
+      - ./docker-local/openiddict:/app/openiddict-certs:ro
 
     ports:
       - "127.0.0.1:8080:8080"

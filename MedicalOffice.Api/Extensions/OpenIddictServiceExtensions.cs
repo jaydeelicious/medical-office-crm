@@ -56,30 +56,27 @@ namespace MedicalOffice.Api.Extensions
                     options.SetRefreshTokenLifetime(TimeSpan.FromDays(7));
 
                     // Signing and encryption credentials
-                    if (environment.IsDevelopment())
-                    {
-                        options.AddDevelopmentEncryptionCertificate();
-                        options.AddDevelopmentSigningCertificate();
-                    }
-                    else
-                    {
-                        var signingCertificate = LoadCertificate(
-                            configuration,
-                            "Signing");
+                    var useConfiguredCertificates =
+                        configuration.GetValue<bool>("OpenIddict:Certificates:UseConfiguredCertificates");
 
-                        var encryptionCertificate = LoadCertificate(
-                            configuration,
-                            "Encryption");
+                    if (useConfiguredCertificates || !environment.IsDevelopment())
+                    {
+                        var signingCertificate = LoadCertificate(configuration, "Signing");
 
-                        if (signingCertificate.Thumbprint == 
-                            encryptionCertificate.Thumbprint)
+                        var encryptionCertificate = LoadCertificate(configuration, "Encryption");
+
+                        if (signingCertificate.Thumbprint == encryptionCertificate.Thumbprint)
                         {
-                            throw new InvalidOperationException(
-                                "Signing and encryption certificates must be different.");
+                            throw new InvalidOperationException("Signing and encryption certificates must be different.");
                         }
 
                         options.AddSigningCertificate(signingCertificate);
                         options.AddEncryptionCertificate(encryptionCertificate);
+                    }
+                    else
+                    {
+                        options.AddDevelopmentEncryptionCertificate();
+                        options.AddDevelopmentSigningCertificate();
                     }
 
                     // ASP.NET Core integration
