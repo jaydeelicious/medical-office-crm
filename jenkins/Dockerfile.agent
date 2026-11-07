@@ -1,6 +1,8 @@
 # Copy the .NET 10 SDK from the official Microsoft image.
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS dotnet
 
+FROM node:24-bookworm-slim AS node
+
 # Base image with Jenkins inbound agent and Java.
 FROM jenkins/inbound-agent:jdk21
 
@@ -15,6 +17,9 @@ RUN apt-get update \
 
 # Copy .NET 10 SDK from the official Microsoft image.
 COPY --from=dotnet /usr/share/dotnet /usr/share/dotnet
+
+# Install Node.js 24 and npm.
+COPY --from=node /usr/local /usr/local
 
 ENV DOTNET_ROOT=/usr/share/dotnet
 ENV PATH="/usr/share/dotnet:${PATH}"

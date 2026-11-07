@@ -63,6 +63,38 @@ pipeline {
                 }
             }
         }
+
+        stage('Frontend Install') {
+            steps {
+                dir('medical-office-web') {
+                    sh 'npm ci'
+                }
+            }
+        }
+
+        stage('Frontend Tests') {
+            steps {
+                dir('medical-office-web') {
+                    sh 'npm test -- --watch=false'
+                }
+            }
+        }
+
+        stage('Frontend Lint') {
+            steps {
+                dir('medical-office-web') {
+                    sh 'npm run lint'
+                }
+            }
+        }
+
+        stage('Frontend Build') {
+            steps {
+                dir('medical-office-web') {
+                    sh 'npm run build -- --configuration production'
+                }
+            }
+        }
     }
 
     post {
