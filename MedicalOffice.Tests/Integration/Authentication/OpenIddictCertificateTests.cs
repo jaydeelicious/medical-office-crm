@@ -59,6 +59,16 @@ namespace MedicalOffice.Tests.Integration.Authentication
                 .WithWebHostBuilder(builder =>
                 {
                     builder.UseEnvironment("Development");
+
+                    builder.ConfigureAppConfiguration((context, config) =>
+                    {
+                        config.AddInMemoryCollection(
+                            new Dictionary<string, string?>
+                            {
+                                ["OpenIddict:Clients:SeedOnStartup"] = "false",
+                                ["DevelopmentTestUser:SeedOnStartup"] = "false"
+                            });
+                    });
                 });
 
             // Act
