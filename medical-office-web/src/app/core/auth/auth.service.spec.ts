@@ -1,6 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 import { OidcSecurityService } from 'angular-auth-oidc-client';
-import { BehaviorSubject, firstValueFrom, of, take } from 'rxjs';
+import { 
+  BehaviorSubject, 
+  firstValueFrom, 
+  of, 
+  take,
+  throwError,
+} from 'rxjs';
 
 import { AuthService } from './auth.service';
 
@@ -14,7 +20,7 @@ describe('AuthService', () => {
     authorize: vi.fn(),
     logoff: vi.fn().mockReturnValue(of({})),
     getAccessToken: vi.fn().mockReturnValue(of('test-access-token')),
-    getPayloadFromAccessToken: vi.fn().mockReturnValue(of({})),
+    getPayloadFromIdToken: vi.fn().mockReturnValue(of({})),
   };
 
   let service: AuthService;
@@ -33,7 +39,7 @@ describe('AuthService', () => {
       of({}),
     );
 
-    oidcSecurityServiceMock.getPayloadFromAccessToken.mockReturnValue(of({}));
+    oidcSecurityServiceMock.getPayloadFromIdToken.mockReturnValue(of({}));
 
     TestBed.configureTestingModule({
       providers: [
@@ -238,7 +244,7 @@ describe('AuthService', () => {
   ])(
     'checks Admin access for token claims',
     async (claims, expected) => {
-      oidcSecurityServiceMock.getPayloadFromAccessToken
+      oidcSecurityServiceMock.getPayloadFromIdToken
         .mockReturnValue(of(claims));
 
       authenticationState.next({
@@ -250,6 +256,10 @@ describe('AuthService', () => {
       );
 
       expect(canView).toBe(expected);
+
+      expect(
+        oidcSecurityServiceMock.getPayloadFromIdToken,
+      ).toHaveBeenCalledOnce();
     },
   );
 
@@ -261,12 +271,12 @@ describe('AuthService', () => {
     expect(canView).toBe(false);
 
     expect(
-      oidcSecurityServiceMock.getPayloadFromAccessToken,
+      oidcSecurityServiceMock.getPayloadFromIdToken,
     ).not.toHaveBeenCalled();
   });
 
   it('handles missing role information safely', async () => {
-    oidcSecurityServiceMock.getPayloadFromAccessToken
+    oidcSecurityServiceMock.getPayloadFromIdToken
       .mockReturnValue(of(null));
 
     authenticationState.next({
@@ -280,4 +290,20 @@ describe('AuthService', () => {
     expect(canView).toBe(false);
   });
 
+  it('hides audit history when ID token retrieval fails', async () => {
+    oidcSecurityServiceMock.getPayloadFromIdToken
+      .mockReturnValue(
+        throwError(() => new Error('Token unavailable')),
+      );
+
+    authenticationState.next({
+      isAuthenticated: true,
+    });
+
+    const canView = await firstValueFrom(
+      service.canViewAuditHistory$,
+    );
+
+    expect(canView).toBe(false);
+  });
 });

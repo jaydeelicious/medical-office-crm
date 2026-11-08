@@ -179,7 +179,8 @@ namespace MedicalOffice.Api.Controllers
                         Destinations.IdentityToken],
 
                 Claims.Role 
-                    => [Destinations.AccessToken],
+                    => [Destinations.AccessToken,
+                        Destinations.IdentityToken],
 
                 _ => []
             });

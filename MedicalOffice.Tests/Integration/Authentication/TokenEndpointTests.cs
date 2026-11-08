@@ -248,6 +248,74 @@ public class TokenEndpointTests
             document.RootElement.GetProperty("error").GetString());
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Token_AuthorizationCodeFlow_ReflectsAdminRoleInIdToken(
+        bool isAdmin)
+    {
+        using var factory = new CustomWebApplicationFactory();
+        using var client = CreateClient(factory);
+
+        await SetupAsync(factory, isAdmin: isAdmin);
+        await LoginAsync(client);
+
+        // Perform the real Authorization Code + PKCE flow.
+        var code = await GetAuthorizationCodeAsync(client);
+
+        using var response = await ExchangeCodeAsync(client, code);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        using var document = await response.Content
+            .ReadFromJsonAsync<JsonDocument>();
+
+        Assert.NotNull(document);
+
+        var idToken = document.RootElement
+            .GetProperty("id_token")
+            .GetString();
+
+        Assert.False(string.IsNullOrWhiteSpace(idToken));
+
+        // ID tokens are signed JWTs; decode their payload locally.
+        var segments = idToken.Split('.');
+
+        Assert.Equal(3, segments.Length);
+
+        var payloadBytes = WebEncoders.Base64UrlDecode(segments[1]);
+
+        using var payloadDocument = JsonDocument.Parse(payloadBytes);
+
+        var payload = payloadDocument.RootElement;
+
+        if (isAdmin)
+        {
+            Assert.True(
+                payload.TryGetProperty("role", out var roleClaim),
+                "Admin role must be included in the ID token.");
+
+            if (roleClaim.ValueKind == JsonValueKind.String)
+            {
+                Assert.Equal("Admin", roleClaim.GetString());
+            }
+            else
+            {
+                Assert.Equal(JsonValueKind.Array, roleClaim.ValueKind);
+
+                Assert.Contains(
+                    roleClaim.EnumerateArray(),
+                    role => role.GetString() == "Admin");
+            }
+        }
+        else
+        {
+            Assert.False(
+                payload.TryGetProperty("role", out _),
+                "Ordinary users must not receive an Admin role claim.");
+        }
+    }
+
     private static HttpClient CreateClient(
         CustomWebApplicationFactory factory)
     {
@@ -262,7 +330,8 @@ public class TokenEndpointTests
     }
 
     private static async Task SetupAsync(
-        CustomWebApplicationFactory factory)
+        CustomWebApplicationFactory factory,
+        bool isAdmin = false)
     {
         using var scope = factory.Services.CreateScope();
 
@@ -287,6 +356,25 @@ public class TokenEndpointTests
             result.Succeeded,
             string.Join("; ",
                 result.Errors.Select(e => e.Description)));
+
+        if (isAdmin)
+        {
+            var roleManager = scope.ServiceProvider
+                .GetRequiredService<RoleManager<IdentityRole>>();
+
+            var roleResult = await roleManager.CreateAsync(
+                new IdentityRole("Admin"));
+
+            Assert.True(roleResult.Succeeded);
+
+            var user = await userManager.FindByNameAsync("testuser");
+            Assert.NotNull(user);
+
+            var assignmentResult = await userManager.AddToRoleAsync(
+                user, "Admin");
+
+            Assert.True(assignmentResult.Succeeded);
+        }
 
         var manager = scope.ServiceProvider
             .GetRequiredService<IOpenIddictApplicationManager>();
