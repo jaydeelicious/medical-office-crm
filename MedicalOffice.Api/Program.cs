@@ -261,6 +261,16 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// Optional SPA hosting for single-origin deployments.
+// The Docker deployment continues using Nginx.
+var serveSpa = app.Configuration.GetValue<bool>("Hosting:ServeSpa");
+
+if (serveSpa)
+{
+    app.UseDefaultFiles();
+    app.UseStaticFiles();
+}
+
 app.UseRouting();
 app.UseCors("AngularClient");
 
@@ -275,6 +285,12 @@ app.MapGet("/api/health", () =>
         Status = "Healthy"
     }))
     .AllowAnonymous();
+
+// Let Angular handle client-side routes when SPA hosting is enabled.
+if (serveSpa)
+{
+    app.MapFallbackToFile("index.html");
+}
 
 app.Run();
 
