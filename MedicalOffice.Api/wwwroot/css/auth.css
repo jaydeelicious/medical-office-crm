@@ -191,3 +191,25 @@ input {
         margin-bottom: 24px;
     }
 }
+
+
+/* Secondary authentication actions */
+
+.auth-button-secondary {
+    margin-top: 12px;
+    background: transparent;
+    border-color: var(--color-border);
+    color: var(--color-text);
+    text-decoration: none;
+}
+
+    .auth-button-secondary:hover {
+        background: var(--color-hover);
+        border-color: #55555d;
+    }
+
+    .auth-button-secondary:focus-visible {
+        outline: 2px solid var(--color-text);
+        outline-offset: 3px;
+    }
+

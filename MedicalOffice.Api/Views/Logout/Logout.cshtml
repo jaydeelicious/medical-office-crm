@@ -8,33 +8,72 @@
     <meta charset="utf-8" />
     <meta name="viewport"
           content="width=device-width, initial-scale=1" />
-    <title>Medical Office CRM - Sign out</title>
+
+    <title>MedicalOffice - Sign out</title>
+
+    <link rel="stylesheet" href="/css/auth.css" />
 </head>
+
 <body>
-    <main>
-        <h1>Medical Office CRM</h1>
+    <main class="auth-page">
+        <div class="auth-container">
 
-        <p>Are you sure you want to sign out?</p>
+            <div class="auth-brand">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2"
+                     stroke-linecap="round"
+                     stroke-linejoin="round"
+                     aria-hidden="true">
+                    <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z" />
+                    <path d="M3.3 12h4l2-3 3 6 2-3h6.4" />
+                </svg>
 
-        <form method="post" action="/connect/logout">
-            @Html.AntiForgeryToken()
+                <span>MedicalOffice</span>
+            </div>
 
-            @foreach (var parameter in Context.Request.Query)
-            {
-                foreach (var value in parameter.Value)
-                {
-                    <input type="hidden"
-                           name="@parameter.Key"
-                           value="@value" />
-                }
-            }
+            <section class="auth-card"
+                     aria-labelledby="auth-title">
 
-            <button type="submit">Sign out</button>
-        </form>
+                <h1 id="auth-title" class="auth-title">
+                    Sign out
+                </h1>
 
-        <a href="http://localhost:4200/dashboard">
-            Cancel
-        </a>
+                <p class="auth-subtitle">
+                    Are you sure you want to sign out?
+                </p>
+
+                <form method="post" action="/connect/logout">
+                    @Html.AntiForgeryToken()
+
+                    @foreach (var parameter in Context.Request.Query)
+                    {
+                        foreach (var value in parameter.Value)
+                        {
+                            <input type="hidden"
+                                   name="@parameter.Key"
+                                   value="@value" />
+                        }
+                    }
+
+                    <button type="submit" class="auth-button">
+                        Sign out
+                    </button>
+                </form>
+
+                <a href="/"
+                   class="auth-button auth-button-secondary">
+                    Cancel
+                </a>
+            </section>
+
+            <footer class="auth-footer">
+                MedicalOffice CRM
+            </footer>
+
+        </div>
     </main>
 </body>
 </html>
