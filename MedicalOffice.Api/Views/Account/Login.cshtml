@@ -1,56 +1,114 @@
 ﻿@model MedicalOffice.Api.Models.Account.LoginViewModel
 
 @{
-	ViewData["Title"] = "Sign in";
+    ViewData["Title"] = "Sign in";
 }
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="utf-8" />
-	<meta name="viewport"
-		content="width=device-width, initial-scale=1" />
-	<title>Medical Office CRM - Sign in</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MedicalOffice - Sign in</title>
+
+    <link rel="stylesheet" href="/css/auth.css" />
 </head>
+
 <body>
-	<main>
-		<h1>Medical Office CRM</h1>
+    <main class="auth-page">
+        <div class="auth-container">
 
-		@if (User.Identity?.IsAuthenticated == true)
-		{
-			<p>You are signed in.</p>
+            <div class="auth-brand">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2"
+                     stroke-linecap="round"
+                     stroke-linejoin="round"
+                     aria-hidden="true">
+                    <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z" />
+                    <path d="M3.3 12h4l2-3 3 6 2-3h6.4" />
+                </svg>
+                <span>MedicalOffice</span>
+            </div>
 
-			<form method="post" action="/account/logout">
-				@Html.AntiForgeryToken()
-				<button type="submit">Sign out</button>
-			</form>
-		}
-		else
-		{
-			<form method="post" action="/account/login"	>
-				@Html.AntiForgeryToken()
+            <section class="auth-card" aria-labelledby="auth-title">
 
-				<input type="hidden"
-					asp-for="ReturnUrl" />
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <h1 id="auth-title" class="auth-title">
+                        You're signed in
+                    </h1>
 
-				<div asp-validation-summary="All"></div>
+                    <p class="signed-in-message">
+                        You are currently authenticated.
+                    </p>
 
-				<div>
-					<label asp-for="UserName">Username</label>
-					<input asp-for="UserName"
-						autocomplete="username" />
-				</div>
+                    <form method="post" action="/account/logout">
+                        @Html.AntiForgeryToken()
 
-				<div>
-					<label asp-for="Password">Password</label>
-					<input asp-for="Password"
-						type="password"
-						autocomplete="current-password" />
-				</div>
+                        <button type="submit" class="auth-button">
+                            Sign out
+                        </button>
+                    </form>
+                }
+                else
+                {
+                    <h1 id="auth-title" class="auth-title">
+                        Welcome back
+                    </h1>
 
-				<button type="submit">Sign in</button>
-			</form>
-		}
-	</main>
+                    <p class="auth-subtitle">
+                        Sign in to your MedicalOffice account.
+                    </p>
+
+                    <form method="post" action="/account/login">
+                        @Html.AntiForgeryToken()
+
+                        <input type="hidden" asp-for="ReturnUrl" />
+
+                        <div asp-validation-summary="All"
+                             role="alert"></div>
+
+                        <div class="form-field">
+                            <label asp-for="UserName" class="form-label">
+                                Username
+                            </label>
+
+                            <input asp-for="UserName"
+                                   class="form-input"
+                                   autocomplete="username"
+                                   required />
+
+                            <span asp-validation-for="UserName"></span>
+                        </div>
+
+                        <div class="form-field">
+                            <label asp-for="Password" class="form-label">
+                                Password
+                            </label>
+
+                            <input asp-for="Password"
+                                   class="form-input"
+                                   type="password"
+                                   autocomplete="current-password"
+                                   required />
+
+                            <span asp-validation-for="Password"></span>
+                        </div>
+
+                        <button type="submit" class="auth-button">
+                            Sign in
+                        </button>
+                    </form>
+                }
+            </section>
+
+            <footer class="auth-footer">
+                MedicalOffice CRM
+            </footer>
+        </div>
+    </main>
 </body>
 </html>
