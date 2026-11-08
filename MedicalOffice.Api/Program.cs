@@ -134,10 +134,13 @@ var keyDirectory = builder.Configuration["DataProtection:KeysDirectory"];
 
 if (!string.IsNullOrWhiteSpace(keyDirectory))
 {
-    if (!Path.IsPathFullyQualified(keyDirectory))
-    {
-        throw new InvalidOperationException("DataProtection:KeysDirectory must be an absolute path.");
-    }
+    var resolvedKeyDirectory = Path.IsPathFullyQualified(keyDirectory)
+        ? keyDirectory
+        : Path.GetFullPath(
+            keyDirectory,
+            builder.Environment.ContentRootPath);
+
+    Directory.CreateDirectory(resolvedKeyDirectory);
 
     dataProtection
         .SetApplicationName("MedicalOfficeCRM")

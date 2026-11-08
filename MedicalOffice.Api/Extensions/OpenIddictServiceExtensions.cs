@@ -61,9 +61,9 @@ namespace MedicalOffice.Api.Extensions
 
                     if (useConfiguredCertificates || !environment.IsDevelopment())
                     {
-                        var signingCertificate = LoadCertificate(configuration, "Signing");
+                        var signingCertificate = LoadCertificate(configuration, environment, "Signing");
 
-                        var encryptionCertificate = LoadCertificate(configuration, "Encryption");
+                        var encryptionCertificate = LoadCertificate(configuration, environment, "Encryption");
 
                         if (signingCertificate.Thumbprint == encryptionCertificate.Thumbprint)
                         {
@@ -99,6 +99,7 @@ namespace MedicalOffice.Api.Extensions
 
         private static X509Certificate2 LoadCertificate(
             IConfiguration configuration,
+            IWebHostEnvironment environment,
             string certificateType)
         {
             var section = configuration.GetSection(
@@ -115,7 +116,11 @@ namespace MedicalOffice.Api.Extensions
                     "configuration is missing.");
             }
 
-            if (!File.Exists(path))
+            var resolvedPath = Path.IsPathFullyQualified(path)
+                ? path
+                : Path.GetFullPath(path, environment.ContentRootPath);
+
+            if (!File.Exists(resolvedPath))
             {
                 throw new InvalidOperationException(
                     $"OpenIddict {certificateType} certificate " +
@@ -123,7 +128,7 @@ namespace MedicalOffice.Api.Extensions
             }
 
             var certificate = X509CertificateLoader.LoadPkcs12FromFile(
-                path,
+                resolvedPath,
                 password,
                 X509KeyStorageFlags.EphemeralKeySet);
 
