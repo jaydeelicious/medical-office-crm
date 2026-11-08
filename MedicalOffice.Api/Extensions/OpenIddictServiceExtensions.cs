@@ -130,6 +130,7 @@ namespace MedicalOffice.Api.Extensions
             var certificate = X509CertificateLoader.LoadPkcs12FromFile(
                 resolvedPath,
                 password,
+                X509KeyStorageFlags.MachineKeySet |
                 X509KeyStorageFlags.EphemeralKeySet);
 
             var now = DateTime.UtcNow;
