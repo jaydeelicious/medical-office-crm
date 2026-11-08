@@ -281,8 +281,10 @@ var serveSpa = app.Configuration.GetValue<bool>("Hosting:ServeSpa");
 if (serveSpa)
 {
     app.UseDefaultFiles();
-    app.UseStaticFiles();
 }
+
+// Serve the authentication stylesheet regardless of SPA hosting.
+app.UseStaticFiles();
 
 app.UseRouting();
 app.UseCors("AngularClient");

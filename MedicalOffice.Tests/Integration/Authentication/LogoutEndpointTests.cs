@@ -193,6 +193,79 @@ public class LogoutEndpointTests
             location.Host == "evil.example");
     }
 
+
+    [Fact]
+    public async Task LogoutPage_UsesSharedAuthenticationStyling()
+    {
+        using var factory = new CustomWebApplicationFactory();
+        using var client = await CreateClientAsync(factory);
+
+        using var response = await client.GetAsync(LogoutUrl);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Contains("/css/auth.css", html);
+        Assert.Contains("auth-page", html);
+        Assert.Contains("auth-card", html);
+        Assert.Contains("auth-button-secondary", html);
+
+        Assert.Contains(
+            "Are you sure you want to sign out?",
+            html);
+
+        Assert.Contains(
+            "action=\"/connect/logout\"",
+            html);
+    }
+
+    [Fact]
+    public async Task LogoutPage_PreservesOidcParameters()
+    {
+        using var factory = new CustomWebApplicationFactory();
+        using var client = await CreateClientAsync(factory);
+
+        using var response = await client.GetAsync(LogoutUrl);
+
+        response.EnsureSuccessStatusCode();
+
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Matches(
+            """<input\b(?=[^>]*name="client_id")(?=[^>]*value="medicaloffice-angular")[^>]*>""",
+            html);
+
+        Assert.Matches(
+            """<input\b(?=[^>]*name="post_logout_redirect_uri")(?=[^>]*value="http://localhost:4200/")[^>]*>""",
+            html);
+
+        Assert.Contains(
+            "__RequestVerificationToken",
+            html);
+    }
+
+    [Fact]
+    public async Task LogoutPage_CancelDoesNotSubmitLogout()
+    {
+        using var factory = new CustomWebApplicationFactory();
+        using var client = await CreateClientAsync(factory);
+
+        using var response = await client.GetAsync(LogoutUrl);
+
+        response.EnsureSuccessStatusCode();
+
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Contains(
+            "href=\"/\"",
+            html);
+
+        Assert.Contains(
+            "Cancel",
+            html);
+    }
+
     private static async Task<HttpClient> CreateClientAsync(
         CustomWebApplicationFactory factory)
     {

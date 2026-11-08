@@ -1,0 +1,215 @@
+﻿:root {
+    font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+    color-scheme: dark;
+    --color-background: #0b0b0d;
+    --color-surface: #161619;
+    --color-border: #252529;
+    --color-text: #f5f5f6;
+    --color-text-muted: #a2a2aa;
+    --color-hover: #29292d;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: var(--color-background);
+    color: var(--color-text);
+}
+
+button,
+input {
+    font: inherit;
+}
+
+.auth-page {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 20px;
+}
+
+.auth-container {
+    width: 100%;
+    max-width: 420px;
+}
+
+.auth-brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 32px;
+    font-size: 1.15rem;
+    font-weight: 650;
+}
+
+    .auth-brand svg {
+        width: 25px;
+        height: 25px;
+    }
+
+.auth-card {
+    padding: 36px;
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    background: var(--color-surface);
+}
+
+.auth-title {
+    margin: 0 0 8px;
+    font-size: 1.5rem;
+    font-weight: 650;
+    letter-spacing: -0.5px;
+}
+
+.auth-subtitle {
+    margin: 0 0 32px;
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.form-field {
+    margin-bottom: 22px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 9px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.form-input {
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    padding: 11px 13px;
+    border: 1px solid #38383e;
+    border-radius: 8px;
+    outline: none;
+    background: var(--color-background);
+    color: var(--color-text);
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+    .form-input:hover {
+        border-color: #55555d;
+    }
+
+    .form-input:focus-visible {
+        border-color: #a2a2aa;
+        box-shadow: 0 0 0 3px rgb(162 162 170 / 15%);
+    }
+
+    .form-input.input-validation-error {
+        border-color: #f87171;
+    }
+
+.validation-summary-errors {
+    margin-bottom: 24px;
+    padding: 12px 14px;
+    border: 1px solid #7f3030;
+    border-radius: 8px;
+    background: rgb(127 48 48 / 15%);
+    color: #fca5a5;
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+    .validation-summary-errors ul {
+        margin: 0;
+        padding-left: 18px;
+    }
+
+.field-validation-error {
+    display: block;
+    margin-top: 7px;
+    color: #fca5a5;
+    font-size: 0.8rem;
+}
+
+.auth-button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    min-height: 46px;
+    margin-top: 8px;
+    padding: 12px 16px;
+    border: 1px solid var(--color-text);
+    border-radius: 8px;
+    background: var(--color-text);
+    color: var(--color-background);
+    font-size: 0.9rem;
+    font-weight: 650;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+    .auth-button:hover {
+        background: #dedee2;
+        border-color: #dedee2;
+    }
+
+    .auth-button:focus-visible {
+        outline: 2px solid var(--color-text);
+        outline-offset: 3px;
+    }
+
+.auth-footer {
+    margin-top: 24px;
+    color: var(--color-text-muted);
+    text-align: center;
+    font-size: 0.75rem;
+}
+
+.signed-in-message {
+    margin-bottom: 24px;
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+@media (max-width: 480px) {
+    .auth-page {
+        padding: 24px 16px;
+    }
+
+    .auth-card {
+        padding: 28px 22px;
+    }
+
+    .auth-brand {
+        margin-bottom: 24px;
+    }
+}
+
+
+/* Secondary authentication actions */
+
+.auth-button-secondary {
+    margin-top: 12px;
+    background: transparent;
+    border-color: var(--color-border);
+    color: var(--color-text);
+    text-decoration: none;
+}
+
+    .auth-button-secondary:hover {
+        background: var(--color-hover);
+        border-color: #55555d;
+    }
+
+    .auth-button-secondary:focus-visible {
+        outline: 2px solid var(--color-text);
+        outline-offset: 3px;
+    }
+
