@@ -26,7 +26,7 @@ export class AuthService {
             }
 
             return this.oidcSecurityService
-                .getPayloadFromAccessToken()
+                .getPayloadFromIdToken()
                 .pipe(
                     map((payload: unknown) => {
                         if (
