@@ -97,6 +97,18 @@ pipeline {
                 }
             }
         }
+
+        stage('Docker Backend Build') {
+            steps {
+                sh 'docker build -f MedicalOffice.Api/Dockerfile -t medicaloffice-api:jenkins .'
+            }
+        }
+
+        stage('Docker Frontend Build') {
+            steps {
+                sh 'docker build -f medical-office-web/Dockerfile -t medicaloffice-web:jenkins ./medical-office-web'
+            }
+        }
     }
 
     post {

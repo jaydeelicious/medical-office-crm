@@ -3,6 +3,8 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS dotnet
 
 FROM node:24-bookworm-slim AS node
 
+FROM docker:27-cli AS dockercli
+
 # Base image with Jenkins inbound agent and Java.
 FROM jenkins/inbound-agent:jdk21
 
@@ -13,7 +15,6 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         libicu-dev \
         ca-certificates \
-        docker.io \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy .NET 10 SDK from the official Microsoft image.
@@ -22,7 +23,16 @@ COPY --from=dotnet /usr/share/dotnet /usr/share/dotnet
 # Install Node.js 24 and npm.
 COPY --from=node /usr/local /usr/local
 
+# Install the Docker CLI binary.
+COPY --from=dockercli /usr/local/bin/docker /usr/local/bin/docker
+
 ENV DOTNET_ROOT=/usr/share/dotnet
 ENV PATH="/usr/share/dotnet:${PATH}"
+
+# Fail the image build if the tools are missing.
+RUN dotnet --version \
+    && node --version \
+    && npm --version \
+    && docker --version
 
 USER jenkins
