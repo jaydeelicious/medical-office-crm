@@ -11,6 +11,7 @@ import {
   BehaviorSubject, 
   filter, 
   firstValueFrom,
+  of,
 } from 'rxjs';
 
 import { routes } from './app.routes';
@@ -22,6 +23,7 @@ describe('Application routing', () => {
 
   const authServiceMock = {
     isAuthenticated$: authenticationState.asObservable(),
+    canViewAuditHistory$: of(false),
     login: vi.fn(),
     logout: vi.fn(),
     consumeReturnUrl: vi.fn().mockReturnValue('/dashboard'),
