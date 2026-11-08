@@ -76,12 +76,31 @@ pipeline {
             }
         }
 
+        // stage('Frontend Tests') {
+        //     steps {
+        //         dir('medical-office-web') {
+        //             withEnv(['CI=true']) {
+        //                 sh 'npm test -- --watch=false --configuration ci'
+        //             }
+        //         }
+        //     }
+        // }
+        
         stage('Frontend Tests') {
             steps {
                 dir('medical-office-web') {
                     withEnv(['CI=true']) {
                         sh 'npm test -- --watch=false --configuration ci'
                     }
+                }
+            }
+
+            post {
+                always {
+                    junit(
+                        testResults: 'medical-office-web/test-results/vitest-junit.xml',
+                        allowEmptyResults: false
+                    )
                 }
             }
         }
