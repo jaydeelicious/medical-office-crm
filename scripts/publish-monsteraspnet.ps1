@@ -60,7 +60,7 @@ Copy-Item `
 # This file must never contain secrets.
 $runtimeConfig = @'
 window.__medicalOfficeConfig = {
-    authority: window.location.origin + "/"
+    authority: window.location.origin
 };
 '@
 
