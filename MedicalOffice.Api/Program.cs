@@ -252,6 +252,16 @@ if (app.Environment.IsDevelopment() &&
         app.Configuration);
 }
 
+if (app.Environment.IsProduction() &&
+    app.Configuration.GetValue<bool>("ProductionAdmin:Enabled"))
+{
+    using var scope = app.Services.CreateScope();
+
+    await ProductionAdminBootstrapper.SeedAsync(
+        scope.ServiceProvider,
+        app.Configuration);
+}
+
 app.UseExceptionHandler();
 
 // Configure the HTTP request pipeline.
