@@ -21,7 +21,6 @@ public static class ProductionAdminBootstrapper
         var password = configuration["ProductionAdmin:Password"];
 
         if (string.IsNullOrWhiteSpace(username) ||
-            string.IsNullOrWhiteSpace(email) ||
             string.IsNullOrWhiteSpace(password))
         {
             throw new InvalidOperationException(
@@ -30,7 +29,8 @@ public static class ProductionAdminBootstrapper
 
         // Never modify or promote an existing account through bootstrap.
         if (await userManager.FindByNameAsync(username) is not null ||
-            await userManager.FindByEmailAsync(email) is not null)
+            (!string.IsNullOrWhiteSpace(email) &&
+             await userManager.FindByEmailAsync(email) is not null))
         {
             throw new InvalidOperationException(
                 "Production administrator account already exists. " +
@@ -50,8 +50,8 @@ public static class ProductionAdminBootstrapper
         var user = new ApplicationUser
         {
             UserName = username,
-            Email = email,
-            EmailConfirmed = true
+            Email = string.IsNullOrWhiteSpace(email) ? null : email,
+            EmailConfirmed = !string.IsNullOrWhiteSpace(email)
         };
 
         var createResult = await userManager.CreateAsync(
