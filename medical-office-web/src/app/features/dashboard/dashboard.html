@@ -1,44 +1,99 @@
+
 <section class="dashboard">
-  <h1>Welcome to Medical Office CRM</h1>
+  <header class="dashboard-header">
+    <div class="dashboard-heading">
+      <h1>Dashboard</h1>
+      <p>Overview of your medical office operations.</p>
+    </div>
 
-  <p class="subtitle">
-    Manage your practice from one place.
-  </p>
+    <div
+      class="api-status"
+      [class.connected]="apiStatus() === 'connected'"
+      [class.unavailable]="apiStatus() === 'unavailable'"
+      role="status"
+      aria-live="polite"
+    >
+      <span class="status-dot" aria-hidden="true"></span>
 
-  <section class="dashboard-card" aria-labelledby="dashboard-heading">
-    <h2 id="dashboard-heading">Dashboard</h2>
-    <p>Dashboard features are coming soon.</p>
+      @switch (apiStatus()) {
+        @case ('checking') {
+          <span>Checking API...</span>
+        }
+        @case ('connected') {
+          <span>API Connected</span>
+        }
+        @case ('unavailable') {
+          <span>API Unavailable</span>
+        }
+      }
+    </div>
+  </header>
+
+  <section class="dashboard-section" aria-labelledby="overview-heading">
+    <h2 id="overview-heading" class="section-heading">
+      Overview
+    </h2>
+
+    <div class="stats-grid">
+      <article class="stat-card">
+        <span class="stat-label">Total Patients</span>
+        <span class="stat-value">
+          {{ patientCount() ?? '—'}}
+        </span>
+        <span class="stat-description">Registered patients</span>
+      </article>
+
+      <article class="stat-card">
+        <span class="stat-label">Active Doctors</span>
+        <span class="stat-value">
+          {{ doctorCount() ?? '—' }}
+        </span>
+        <span class="stat-description">Available medical staff</span>
+      </article>
+
+      <article class="stat-card">
+        <span class="stat-label">Today's Appointments</span>
+        <span class="stat-value">—</span>
+        <span class="stat-description">Scheduled for today</span>
+      </article>
+
+      <article class="stat-card">
+        <span class="stat-label">Upcoming Appointments</span>
+        <span class="stat-value">—</span>
+        <span class="stat-description">Future appointments</span>
+      </article>
+    </div>
+  </section>
+
+  <section class="appointments-grid" aria-label="Appointment overview">
+    <article class="dashboard-panel" aria-labelledby="today-heading">
+      <div class="panel-header">
+        <div>
+          <h2 id="today-heading">Today's Appointments</h2>
+          <p>Your schedule for today</p>
+        </div>
+      </div>
+
+      <div class="panel-content">
+        <div class="placeholder-state">
+          <p>Today's appointment schedule will appear here.</p>
+        </div>
+      </div>
+    </article>
+
+    <article class="dashboard-panel" aria-labelledby="upcoming-heading">
+      <div class="panel-header">
+        <div>
+          <h2 id="upcoming-heading">Upcoming Appointments</h2>
+          <p>Appointments scheduled for the coming days</p>
+        </div>
+      </div>
+
+      <div class="panel-content">
+        <div class="placeholder-state">
+          <p>Upcoming appointments will appear here.</p>
+        </div>
+      </div>
+    </article>
   </section>
 </section>
-
-
-<section class="api-status-card" aria-labelledby="api-status-heading">
-  <div class="api-status-header">
-    <h2 id="api-status-heading">Backend API</h2>
-
-    @switch (apiStatus()) {
-      @case ('checking') {
-        <span class="status-badge checking">Checking...</span>
-      }
-      @case ('connected') {
-        <span class="status-badge connected">Connected</span>
-      }
-      @case ('unavailable') {
-        <span class="status-badge unavailable">Unavailable</span>
-      }
-    }
-  </div>
-
-  @switch (apiStatus()) {
-    @case ('checking') {
-      <p>Checking backend connectivity...</p>
-    }
-    @case ('connected') {
-      <p>ASP.NET Core API is responding successfully.</p>
-    }
-    @case ('unavailable') {
-      <p>Unable to connect to the backend API.</p>
-    }
-  }
-</section>
-
