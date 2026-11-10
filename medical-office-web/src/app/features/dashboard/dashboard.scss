@@ -216,3 +216,118 @@
     gap: 8px;
   }
 }
+
+
+/* Today's appointments */
+
+.today-appointments {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.today-appointment {
+  display: grid;
+  grid-template-columns: minmax(110px, auto) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 20px;
+
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-background);
+}
+
+.appointment-time {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.time-separator {
+  color: var(--color-text-muted);
+}
+
+.appointment-information {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 5px;
+}
+
+.appointment-patient {
+  font-size: 0.9rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.appointment-doctor {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.appointment-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.appointment-status {
+  display: inline-flex;
+  padding: 5px 9px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+
+  &.status-scheduled {
+    background: #263348;
+    color: #93c5fd;
+  }
+
+  &.status-completed {
+    background: #173b2b;
+    color: #6ee7b7;
+  }
+
+  &.status-cancelled {
+    background: #451f24;
+    color: #fca5a5;
+  }
+
+  &.status-no-show {
+    background: #433524;
+    color: #fcd34d;
+  }
+}
+
+.appointment-details-link {
+  color: var(--color-text);
+  font-size: 0.8rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+
+  &:focus-visible {
+    outline: 2px solid var(--color-text);
+    outline-offset: 3px;
+  }
+}
+
+@media (max-width: 600px) {
+  .today-appointment {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .appointment-actions {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
