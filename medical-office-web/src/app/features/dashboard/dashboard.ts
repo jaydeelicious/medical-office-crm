@@ -16,7 +16,10 @@ import { HealthService } from '../../core/services/health';
 import { PatientService } from '../patients/patient.service';
 import { DoctorService } from '../doctors/doctor.service';
 import { AppointmentService } from '../appointments/appointment.service';
-import { Appointment } from '../appointments/appointment.model';
+import { 
+  Appointment, 
+  AppointmentStatus
+} from '../appointments/appointment.model';
 import {
   getAppointmentStatusLabel,
   getAppointmentStatusClass,
@@ -34,6 +37,15 @@ type TodayState =
   | { status: 'loading' }
   | { status: 'error' }
   | { status: 'loaded'; appointments: TodayAppointment[] };
+
+type UpcomingState = 
+  | { status: 'loading' }
+  | { status: 'error' }
+  | {
+      status: 'loaded';
+      appointments: TodayAppointment[];
+      totalCount: number;
+    };
 
 @Component({
   selector: 'app-dashboard',
@@ -134,6 +146,63 @@ export class Dashboard {
       startWith<TodayState>({ status: 'loading' }),
     ),
     { initialValue: { status: 'loading' } as TodayState },
+  );
+
+  protected readonly upcomingState = toSignal(
+    forkJoin({
+      appointments: this.appointmentService.getAll(),
+      patients: this.patients$,
+      doctors: this.doctors$,
+    }).pipe(
+      map(({ appointments, patients, doctors }): UpcomingState => {
+        const patientNames = new Map(
+          patients.map((patient) => [
+            patient.id,
+            `${patient.firstName} ${patient.lastName}`,
+          ]),
+        );
+
+        const doctorNames = new Map(
+          doctors.map((doctor) => [
+            doctor.id,
+            `Dr. ${doctor.firstName} ${doctor.lastName}`,
+          ]),
+        );
+
+        const upcomingAppointments = appointments 
+          .filter(
+            (appointment) => 
+              appointment.startTime.slice(0, 10) > this.today &&
+              appointment.status === AppointmentStatus.Scheduled,
+          )
+          .sort((a, b) =>
+            a.startTime.localeCompare(b.startTime),
+          );
+
+        return {
+          status: 'loaded',
+          totalCount: upcomingAppointments.length,
+          appointments: upcomingAppointments
+            .slice(0, 5)
+            .map((appointment) => ({
+              appointment,
+              patientName:
+                patientNames.get(appointment.patientId) ??
+                'Unknown patient',
+              doctorName:
+                doctorNames.get(appointment.doctorId) ??
+                'Unknown doctor',
+            })),
+        };
+      }),
+      catchError(() =>
+        of<UpcomingState>({ status: 'error' }),
+    ),
+      startWith<UpcomingState>({ status: 'loading' }),
+    ),
+    {
+      initialValue: { status: 'loading' } as UpcomingState,
+    },
   );
 
   private formatLocalDate(date: Date): string {

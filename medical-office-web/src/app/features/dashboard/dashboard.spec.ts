@@ -53,6 +53,34 @@ describe('Dashboard', () => {
     return fixture;
   };
 
+  const appointmentDate = (
+    daysFromToday: number,
+    time = '09:00:00',
+  ): string => {
+    const now = new Date();
+
+    const date = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() + daysFromToday,
+    );
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}T${time}`;
+  };
+
+  const mockUpcomingAppointments = (
+    appointments: Appointment[],
+  ): void => {
+    appointmentServiceMock.getAll
+      .mockReset()
+      .mockReturnValueOnce(of([])) // Today
+      .mockReturnValueOnce(of(appointments)); // Upcoming
+  };
+
   const completeHealthCheck = () => {
     httpMock.expectOne('/api/health').flush({
       status: 'Healthy',
@@ -375,5 +403,268 @@ describe('Dashboard', () => {
 
     expect(link?.getAttribute('href'))
       .toBe('/appointments/appointment-123');
+  });
+  
+  it('requests today and upcoming appointments separately', () => {
+    createComponent();
+
+    const calls = appointmentServiceMock.getAll.mock.calls;
+
+    expect(calls).toHaveLength(2);
+
+    expect(calls).toContainEqual([
+      { date: appointmentDate(0).slice(0, 10) },
+    ]);
+
+    expect(calls).toContainEqual([]);
+
+    completeHealthCheck();
+  });
+
+  it('displays only future scheduled appointments', () => {
+    mockUpcomingAppointments([
+      createAppointment('past', appointmentDate(-1)),
+      createAppointment('today', appointmentDate(0)),
+      createAppointment('future', appointmentDate(1)),
+      createAppointment(
+        'completed',
+        appointmentDate(2),
+        AppointmentStatus.Completed,
+      ),
+      createAppointment(
+        'cancelled',
+        appointmentDate(3),
+        AppointmentStatus.Cancelled,
+      ),
+      createAppointment(
+        'no-show',
+        appointmentDate(4),
+        AppointmentStatus.NoShow,
+      ),
+    ]);
+
+    const fixture = createComponent();
+    completeHealthCheck();
+    fixture.detectChanges();
+
+    const upcomingPanel: HTMLElement =
+      fixture.nativeElement.querySelector(
+        '[aria-labelledby="upcoming-heading"]',
+      );
+
+    const rows = upcomingPanel.querySelectorAll(
+      '.upcoming-appointment',
+    );
+
+    expect(rows).toHaveLength(1);
+
+    const link = rows[0].querySelector(
+      '.appointment-details-link',
+    );
+
+    expect(link?.getAttribute('href'))
+      .toBe('/appointments/future');
+
+    expect(upcomingPanel.textContent)
+      .toContain('Scheduled');
+
+    expect(upcomingPanel.textContent)
+      .not.toContain('Cancelled');
+  });
+
+  it('sorts upcoming appointments chronologically', () => {
+    mockUpcomingAppointments([
+      createAppointment('latest', appointmentDate(5)),
+      createAppointment('earliest', appointmentDate(1)),
+      createAppointment('middle', appointmentDate(3)),
+    ]);
+
+    const fixture = createComponent();
+    completeHealthCheck();
+    fixture.detectChanges();
+
+    const links = Array.from(
+      fixture.nativeElement.querySelectorAll(
+        '.upcoming-appointment .appointment-details-link',
+      ),
+    ) as HTMLAnchorElement[];
+
+    expect(links.map((link) => link.getAttribute('href')))
+      .toEqual([
+        '/appointments/earliest',
+        '/appointments/middle',
+        '/appointments/latest',
+      ]);
+  });
+
+  it('limits the upcoming list to five but counts all appointments', () => {
+    const appointments = Array.from(
+      { length: 8 },
+      (_, index) =>
+        createAppointment(
+          `appointment-${index + 1}`,
+          appointmentDate(index + 1),
+        ),
+    );
+
+    mockUpcomingAppointments(appointments);
+
+    const fixture = createComponent();
+    completeHealthCheck();
+    fixture.detectChanges();
+
+    const element: HTMLElement = fixture.nativeElement;
+
+    const rows = element.querySelectorAll(
+      '.upcoming-appointment',
+    );
+
+    expect(rows).toHaveLength(5);
+
+    const cards = element.querySelectorAll('.stat-card');
+
+    expect(
+      cards[3].querySelector('.stat-value')
+        ?.textContent?.trim(),
+    ).toBe('8');
+
+    expect(element.textContent)
+      .toContain('Showing 5 of 8 upcoming appointments.');
+  });
+
+  it('displays upcoming patient and doctor information', () => {
+    mockUpcomingAppointments([
+      createAppointment(
+        'appointment-1',
+        appointmentDate(1, '10:30:00'),
+      ),
+    ]);
+
+    const fixture = createComponent();
+    completeHealthCheck();
+    fixture.detectChanges();
+
+    const row: HTMLElement =
+      fixture.nativeElement.querySelector(
+        '.upcoming-appointment',
+      );
+
+    expect(row.textContent)
+      .toContain('Maria Papadopoulou');
+
+    expect(row.textContent)
+      .toContain('Dr. Nikos Ioannou');
+
+    expect(row.textContent)
+      .toContain('Scheduled');
+
+    expect(row.querySelector('.appointment-time')?.textContent)
+      .toBeTruthy();
+
+    expect(
+      row.querySelector('.appointment-details-link')
+        ?.getAttribute('href'),
+    ).toBe('/appointments/appointment-1');
+  });
+
+  it('displays loading while upcoming appointments are fetched', () => {
+    const pendingAppointments = new Subject<Appointment[]>();
+
+    appointmentServiceMock.getAll
+      .mockReset()
+      .mockReturnValueOnce(of([]))
+      .mockReturnValueOnce(pendingAppointments.asObservable());
+
+    const fixture = createComponent();
+
+    const upcomingPanel: HTMLElement =
+      fixture.nativeElement.querySelector(
+        '[aria-labelledby="upcoming-heading"]',
+      );
+
+    expect(upcomingPanel.textContent)
+      .toContain('Loading upcoming appointments...');
+
+    pendingAppointments.next([]);
+    pendingAppointments.complete();
+
+    fixture.detectChanges();
+
+    expect(upcomingPanel.textContent)
+      .toContain('No upcoming appointments scheduled.');
+
+    completeHealthCheck();
+  });
+
+  it('displays an empty state when no upcoming appointments exist', () => {
+    mockUpcomingAppointments([]);
+
+    const fixture = createComponent();
+    completeHealthCheck();
+    fixture.detectChanges();
+
+    const upcomingPanel: HTMLElement =
+      fixture.nativeElement.querySelector(
+        '[aria-labelledby="upcoming-heading"]',
+      );
+
+    expect(upcomingPanel.textContent)
+      .toContain('No upcoming appointments scheduled.');
+
+    expect(
+      upcomingPanel.querySelectorAll('.upcoming-appointment'),
+    ).toHaveLength(0);
+
+    const cards = fixture.nativeElement.querySelectorAll(
+      '.stat-card',
+    );
+
+    expect(
+      cards[3].querySelector('.stat-value')
+        ?.textContent?.trim(),
+    ).toBe('0');
+  });
+
+  it('handles upcoming appointment API errors without affecting today', () => {
+    appointmentServiceMock.getAll
+      .mockReset()
+      .mockReturnValueOnce(of([]))
+      .mockReturnValueOnce(
+        throwError(() => new Error('API unavailable')),
+      );
+
+    const fixture = createComponent();
+    completeHealthCheck();
+    fixture.detectChanges();
+
+    const element: HTMLElement = fixture.nativeElement;
+
+    const upcomingPanel = element.querySelector<HTMLElement>(
+      '[aria-labelledby="upcoming-heading"]',
+    );
+
+    expect(upcomingPanel).not.toBeNull();
+
+    expect(upcomingPanel?.textContent)
+      .toContain('Unable to load upcoming appointments.');
+
+    expect(upcomingPanel?.querySelector('[role="alert"]'))
+      .not.toBeNull();
+
+    const cards = element.querySelectorAll('.stat-card');
+
+    expect(
+      cards[3].querySelector('.stat-value')
+        ?.textContent?.trim(),
+    ).toBe('—');
+
+    const todayPanel = element.querySelector<HTMLElement>(
+      '[aria-labelledby="today-heading"]',
+    );
+
+    expect(todayPanel).not.toBeNull();
+
+    expect(todayPanel?.textContent)
+      .toContain('No appointments scheduled for today.');
   });
 });

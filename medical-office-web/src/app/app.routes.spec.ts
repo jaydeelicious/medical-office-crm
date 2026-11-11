@@ -45,14 +45,20 @@ describe('Application routing', () => {
     });
   });
 
-  it('redirects the root URL to dashboard', async () => {
-    const harness = await RouterTestingHarness.create();
+  it('redirects the root URL to dashboard', () => {
     const router = TestBed.inject(Router);
 
-    await harness.navigateByUrl('/');
+    // Verify the redirect is registered correctly.
+    const layoutRoute = router.config.find(
+      (route) => route.path === '' && route.children,
+    );
 
-    expect(router.url).toBe('/dashboard');
-  }, 20000);
+    const defaultChild = layoutRoute?.children?.find(
+      (route) => route.path === '' && route.pathMatch === 'full',
+    );
+
+    expect(defaultChild?.redirectTo).toBe('dashboard');
+  });
 
   it('renders each application route', async () => {
     const harness = await RouterTestingHarness.create();

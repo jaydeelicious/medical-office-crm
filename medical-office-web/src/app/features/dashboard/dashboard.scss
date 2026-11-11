@@ -331,3 +331,25 @@
     align-items: center;
   }
 }
+
+/* Upcoming appointments */
+
+.upcoming-appointment .appointment-time {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.upcoming-appointment .appointment-time span:first-child {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.upcoming-summary {
+  margin: 8px 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
