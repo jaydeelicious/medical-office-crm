@@ -38,21 +38,11 @@
       </article>
 
       <article class="stat-card">
-        <span class="stat-label">Upcoming Appointments</span>
-
+        <span class="stat-label">Active Doctors</span>
         <span class="stat-value">
-          @if (upcomingState(); as state) {
-            @if (state.status === 'loaded') {
-              {{ state.totalCount }}
-            } @else {
-              —
-            }
-          }
+          {{ doctorCount() ?? '—' }}
         </span>
-
-        <span class="stat-description">
-          Future scheduled appointments
-        </span>
+        <span class="stat-description">Available medical staff</span>
       </article>
 
       <article class="stat-card">
@@ -71,8 +61,20 @@
 
       <article class="stat-card">
         <span class="stat-label">Upcoming Appointments</span>
-        <span class="stat-value">—</span>
-        <span class="stat-description">Future appointments</span>
+
+        <span class="stat-value">
+          @if (upcomingState(); as state) {
+            @if (state.status === 'loaded') {
+              {{ state.totalCount }}
+            } @else {
+              —
+            }
+          }
+        </span>
+
+        <span class="stat-description">
+          Future scheduled appointments
+        </span>
       </article>
     </div>
   </section>
@@ -164,10 +166,86 @@
         </div>
       </div>
 
+      
       <div class="panel-content">
-        <div class="placeholder-state">
-          <p>Upcoming appointments will appear here.</p>
-        </div>
+        @if (upcomingState(); as state) {
+          @switch (state.status) {
+            @case ('loading') {
+              <div class="placeholder-state" role="status">
+                <p>Loading upcoming appointments...</p>
+              </div>
+            }
+
+            @case ('error') {
+              <div class="placeholder-state" role="alert">
+                <p>
+                  Unable to load upcoming appointments.
+                  Please refresh the page to try again.
+                </p>
+              </div>
+            }
+
+            @case ('loaded') {
+              @if (state.appointments.length === 0) {
+                <div class="placeholder-state">
+                  <p>No upcoming appointments scheduled.</p>
+                </div>
+              } @else {
+                <div class="today-appointments">
+                  @for (item of state.appointments; track item.appointment.id) {
+                    <article class="today-appointment upcoming-appointment">
+                      <div class="appointment-time">
+                        <span>
+                          {{ item.appointment.startTime | date:'mediumDate' }}
+                        </span>
+
+                        <span>
+                          {{ item.appointment.startTime | date:'shortTime' }}
+                        </span>
+                      </div>
+
+                      <div class="appointment-information">
+                        <span class="appointment-patient">
+                          {{ item.patientName }}
+                        </span>
+
+                        <span class="appointment-doctor">
+                          {{ item.doctorName }}
+                        </span>
+                      </div>
+
+                      <div class="appointment-actions">
+                        <span
+                          class="appointment-status"
+                          [class]="getStatusClass(item.appointment.status)"
+                        >
+                          {{ getStatusLabel(item.appointment.status) }}
+                        </span>
+
+                        <a
+                          class="appointment-details-link"
+                          [routerLink]="[
+                            '/appointments',
+                            item.appointment.id
+                          ]"
+                        >
+                          Details
+                        </a>
+                      </div>
+                    </article>
+                  }
+
+                  @if (state.totalCount > state.appointments.length) {
+                    <p class="upcoming-summary">
+                      Showing {{ state.appointments.length }}
+                      of {{ state.totalCount }} upcoming appointments.
+                    </p>
+                  }
+                </div>
+              }
+            }
+          }
+        }
       </div>
     </article>
   </section>
