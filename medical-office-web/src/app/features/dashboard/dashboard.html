@@ -38,11 +38,21 @@
       </article>
 
       <article class="stat-card">
-        <span class="stat-label">Active Doctors</span>
+        <span class="stat-label">Upcoming Appointments</span>
+
         <span class="stat-value">
-          {{ doctorCount() ?? '—' }}
+          @if (upcomingState(); as state) {
+            @if (state.status === 'loaded') {
+              {{ state.totalCount }}
+            } @else {
+              —
+            }
+          }
         </span>
-        <span class="stat-description">Available medical staff</span>
+
+        <span class="stat-description">
+          Future scheduled appointments
+        </span>
       </article>
 
       <article class="stat-card">
