@@ -667,4 +667,140 @@ describe('Dashboard', () => {
     expect(todayPanel?.textContent)
       .toContain('No appointments scheduled for today.');
   });
+
+  it('renders all four dashboard quick actions', () => {
+    const fixture = createComponent();
+    completeHealthCheck();
+    fixture.detectChanges();
+
+    const element: HTMLElement = fixture.nativeElement;
+
+    const quickActions = element.querySelectorAll(
+      '.quick-actions-grid .quick-action',
+    );
+
+    expect(quickActions).toHaveLength(4);
+
+    const labels = Array.from(quickActions).map(
+      (action) => action.querySelector(
+        '.quick-action-title',
+      )?.textContent?.trim(),
+    );
+
+    expect(labels).toEqual([
+      'New Appointment',
+      'New Patient',
+      'View Appointments',
+      'Manage Doctors',
+    ]);
+  });
+
+  it('links each quick action to the correct route', () => {
+    const fixture = createComponent();
+    completeHealthCheck();
+    fixture.detectChanges();
+
+    const links = Array.from(
+      fixture.nativeElement.querySelectorAll(
+        '.quick-actions-grid a.quick-action',
+      ),
+    ) as HTMLAnchorElement[];
+
+    const destinations = links.map((link) => ({
+      label: link.querySelector(
+        '.quick-action-title',
+      )?.textContent?.trim(),
+      href: link.getAttribute('href'),
+    }));
+
+    expect(destinations).toEqual([
+      {
+        label: 'New Appointment',
+        href: '/appointments/new',
+      },
+      {
+        label: 'New Patient',
+        href: '/patients/new',
+      },
+      {
+        label: 'View Appointments',
+        href: '/appointments',
+      },
+      {
+        label: 'Manage Doctors',
+        href: '/doctors',
+      },
+    ]);
+  });
+
+  it('uses accessible links inside a labeled navigation region', () => {
+    const fixture = createComponent();
+    completeHealthCheck();
+    fixture.detectChanges();
+
+    const element: HTMLElement = fixture.nativeElement;
+
+    const section = element.querySelector<HTMLElement>(
+      '[aria-labelledby="quick-actions-heading"]',
+    );
+
+    expect(section).not.toBeNull();
+
+    expect(
+      element.querySelector('#quick-actions-heading')
+        ?.textContent,
+    ).toContain('Quick Actions');
+
+    const navigation = section?.querySelector<HTMLElement>(
+      'nav[aria-label="Dashboard quick actions"]',
+    );
+
+    expect(navigation).not.toBeNull();
+
+    const links = navigation?.querySelectorAll<HTMLAnchorElement>(
+      'a.quick-action',
+    );
+
+    expect(links).toHaveLength(4);
+
+    links?.forEach((link) => {
+      // Native anchors with href are keyboard focusable.
+      expect(link.hasAttribute('href')).toBe(true);
+      expect(link.getAttribute('href')).toBeTruthy();
+
+      // No explicit negative tabindex should remove it
+      // from normal keyboard navigation.
+      expect(link.tabIndex).toBeGreaterThanOrEqual(0);
+
+      // Every link has an accessible name from its text.
+      expect(link.textContent?.trim()).toBeTruthy();
+    });
+  });
+
+  it('preserves dashboard sections after adding quick actions', () => {
+    const fixture = createComponent();
+    completeHealthCheck();
+    fixture.detectChanges();
+
+    const element: HTMLElement = fixture.nativeElement;
+
+    expect(element.querySelectorAll('.stat-card'))
+      .toHaveLength(4);
+
+    expect(
+      element.querySelector('#today-heading')?.textContent,
+    ).toContain("Today's Appointments");
+
+    expect(
+      element.querySelector('#upcoming-heading')?.textContent,
+    ).toContain('Upcoming Appointments');
+
+    expect(
+      element.querySelector('#quick-actions-heading')?.textContent,
+    ).toContain('Quick Actions');
+
+    expect(
+      element.querySelectorAll('.dashboard-panel'),
+    ).toHaveLength(2);
+  });
 });

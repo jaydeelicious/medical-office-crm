@@ -79,6 +79,82 @@
     </div>
   </section>
 
+  
+  <section
+    class="dashboard-section quick-actions-section"
+    aria-labelledby="quick-actions-heading"
+  >
+    <div class="quick-actions-header">
+      <h2 id="quick-actions-heading" class="section-heading">
+        Quick Actions
+      </h2>
+      <p>Shortcuts to frequently used office operations.</p>
+    </div>
+
+    <nav class="quick-actions-grid" aria-label="Dashboard quick actions">
+      <a
+        class="quick-action"
+        routerLink="/appointments/new"
+      >
+        <span class="quick-action-content">
+          <span class="quick-action-title">
+            New Appointment
+          </span>
+          <span class="quick-action-description">
+            Schedule a patient visit
+          </span>
+        </span>
+        <span class="quick-action-arrow" aria-hidden="true">→</span>
+      </a>
+
+      <a
+        class="quick-action"
+        routerLink="/patients/new"
+      >
+        <span class="quick-action-content">
+          <span class="quick-action-title">
+            New Patient
+          </span>
+          <span class="quick-action-description">
+            Register a new patient
+          </span>
+        </span>
+        <span class="quick-action-arrow" aria-hidden="true">→</span>
+      </a>
+
+      <a
+        class="quick-action"
+        routerLink="/appointments"
+      >
+        <span class="quick-action-content">
+          <span class="quick-action-title">
+            View Appointments
+          </span>
+          <span class="quick-action-description">
+            Manage scheduled appointments
+          </span>
+        </span>
+        <span class="quick-action-arrow" aria-hidden="true">→</span>
+      </a>
+
+      <a
+        class="quick-action"
+        routerLink="/doctors"
+      >
+        <span class="quick-action-content">
+          <span class="quick-action-title">
+            Manage Doctors
+          </span>
+          <span class="quick-action-description">
+            View and manage medical staff
+          </span>
+        </span>
+        <span class="quick-action-arrow" aria-hidden="true">→</span>
+      </a>
+    </nav>
+  </section>
+
+
   <section class="appointments-grid" aria-label="Appointment overview">
     <article class="dashboard-panel" aria-labelledby="today-heading">
       <div class="panel-header">
