@@ -1,0 +1,82 @@
+
+<div class="dob-picker">
+    <div class="dob-fields">
+        @for (field of fields; track field.key) {
+            <div class="dob-field">
+                <label [for]="'dob-' + field.key">
+                    {{ field.label }}
+                </label>
+
+                <div class="input-wrapper">
+                    <input
+                        [id]="'dob-' + field.key"
+                        type="text"
+                        inputmode="numeric"
+                        autocomplete="off"
+                        [attr.maxlength]="field.key === 'year' ? 4 : 2"
+                        [attr.placeholder]="field.key === 'year' ? 'YYYY' : field.key === 'month' ? 'MM' : 'DD'"
+                        [value]="valueOf(field.key)"
+                        [disabled]="disabled()"
+                        [attr.aria-expanded]="openField() === field.key"
+                        [attr.aria-controls]="'dob-options-' + field.key"
+                        [attr.aria-invalid]="touched() && !!getError()"
+                        aria-autocomplete="list"
+                        aria-haspopup="listbox"
+                        role="combobox"
+                        (input)="inputChanged(field.key, $event)"
+                        (keydown)="handleKeydown(field.key, $event)"
+                        (blur)="markTouched()"
+                    />
+
+                    <button
+                        type="button"
+                        class="dropdown-toggle"
+                        [disabled]="disabled()"
+                        [attr.aria-label]="'Show ' + field.label + ' options'"
+                        [attr.aria-expanded]="openField() === field.key"
+                        (click)="toggleDropdown(field.key)"
+                    >
+                        <span aria-hidden="true">⌄</span>
+                    </button>
+                </div>
+
+                @if (openField() === field.key) {
+                    <div
+                        class="options"
+                        [id]="'dob-options-' + field.key"
+                        role="listbox"
+                        [attr.aria-label]="field.label + ' options'"
+                    >
+                        @for (
+                            option of visibleOptions(field.key);
+                            track option;
+                            let i = $index
+                        ) {
+                            <button
+                                type="button"
+                                role="option"
+                                tabindex="-1"
+                                class="option"
+                                [class.active]="activeIndex() === i"
+                                [attr.aria-selected]="valueOf(field.key) === option"
+                                (click)="selectOption(field.key, option)"
+                            >
+                                {{ option }}
+                            </button>
+                        } @empty {
+                            <div class="no-options">
+                                No matching values
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    @if (touched() && getError(); as error) {
+        <p class="field-error" role="alert">
+            {{ error }}
+        </p>
+    }
+</div>
