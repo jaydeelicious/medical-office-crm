@@ -353,3 +353,125 @@
   text-align: center;
 }
 
+
+/* Dashboard Quick Actions */
+
+.quick-actions-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+
+  .section-heading {
+    margin-bottom: 0;
+  }
+
+  p {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+  }
+}
+
+.quick-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.quick-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  min-width: 0;
+  min-height: 100px;
+  padding: 20px;
+
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+
+  color: var(--color-text);
+  text-decoration: none;
+
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    transform 0.2s ease;
+
+  &:hover {
+    border-color: var(--color-primary, #60a5fa);
+    background: var(--color-background);
+    transform: translateY(-2px);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary, #60a5fa);
+    outline-offset: 3px;
+  }
+}
+
+.quick-action-content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 8px;
+}
+
+.quick-action-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.quick-action-description {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.quick-action-arrow {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  font-size: 1.25rem;
+  transition: transform 0.2s ease;
+}
+
+.quick-action:hover .quick-action-arrow {
+  transform: translateX(4px);
+}
+
+@media (max-width: 1200px) {
+  .quick-actions-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .quick-actions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .quick-action {
+    min-height: 80px;
+    padding: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quick-action,
+  .quick-action-arrow {
+    transition: none;
+  }
+
+  .quick-action:hover {
+    transform: none;
+  }
+
+  .quick-action:hover .quick-action-arrow {
+    transform: none;
+  }
+}
+
+
