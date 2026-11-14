@@ -1,0 +1,142 @@
+
+<section class="quick-create" aria-labelledby="quick-create-title">
+    <header class="quick-create-header">
+        <h2 id="quick-create-title">New patient</h2>
+        <p>Create a patient without leaving the appointment.</p>
+    </header>
+
+    <div [formGroup]="form" class="patient-fields">
+        <div class="form-field">
+            <label for="quickFirstName">First name *</label>
+            <input
+                id="quickFirstName"
+                type="text"
+                formControlName="firstName"
+                maxlength="100"
+                autocomplete="given-name"
+                [attr.aria-invalid]="firstName.invalid && firstName.touched"
+                (keydown.enter)="$event.preventDefault()"
+            />
+
+            @if (firstName.invalid && firstName.touched) {
+                <p class="field-error">
+                    @if (firstName.hasError('required') ||
+                         firstName.hasError('pattern')) {
+                        First name is required.
+                    } @else if (firstName.hasError('maxlength')) {
+                        First name must not exceed 100 characters.
+                    }
+                </p>
+            }
+        </div>
+
+        <div class="form-field">
+            <label for="quickLastName">Last name *</label>
+            <input
+                id="quickLastName"
+                type="text"
+                formControlName="lastName"
+                maxlength="100"
+                autocomplete="family-name"
+                [attr.aria-invalid]="lastName.invalid && lastName.touched"
+                (keydown.enter)="$event.preventDefault()"
+            />
+
+            @if (lastName.invalid && lastName.touched) {
+                <p class="field-error">
+                    @if (lastName.hasError('required') ||
+                         lastName.hasError('pattern')) {
+                        Last name is required.
+                    } @else if (lastName.hasError('maxlength')) {
+                        Last name must not exceed 100 characters.
+                    }
+                </p>
+            }
+        </div>
+
+        <div class="form-field">
+            <label for="quickPhone">Phone</label>
+            <input
+                id="quickPhone"
+                type="tel"
+                formControlName="phone"
+                maxlength="30"
+                autocomplete="tel"
+                [attr.aria-invalid]="phone.invalid && phone.touched"
+                (keydown.enter)="$event.preventDefault()"
+            />
+
+            @if (phone.invalid && phone.touched) {
+                <p class="field-error">
+                    Phone must not exceed 30 characters.
+                </p>
+            }
+        </div>
+
+        <div class="form-field">
+            <label for="quickEmail">Email</label>
+            <input
+                id="quickEmail"
+                type="email"
+                formControlName="email"
+                maxlength="200"
+                autocomplete="email"
+                [attr.aria-invalid]="email.invalid && email.touched"
+                (keydown.enter)="$event.preventDefault()"
+            />
+
+            @if (email.invalid && email.touched) {
+                <p class="field-error">
+                    @if (email.hasError('email')) {
+                        Enter a valid email address.
+                    } @else if (email.hasError('maxlength')) {
+                        Email must not exceed 200 characters.
+                    }
+                </p>
+            }
+        </div>
+
+        <fieldset class="dob-fieldset">
+            <legend>Date of birth (optional)</legend>
+
+            <app-date-of-birth-picker
+                formControlName="dateOfBirth"
+            />
+        </fieldset>
+    </div>
+
+    @if (errorMessage(); as message) {
+        <app-error-message [message]="message" />
+    }
+
+    @if (validationErrors().length > 0) {
+        <div class="validation-summary" role="alert">
+            <p>Please review the following errors:</p>
+            <ul>
+                @for (error of validationErrors(); track $index) {
+                    <li>{{ error }}</li>
+                }
+            </ul>
+        </div>
+    }
+
+    <div class="quick-create-actions">
+        <button
+            type="button"
+            class="cancel-button"
+            [disabled]="isSubmitting()"
+            (click)="cancel()"
+        >
+            Cancel
+        </button>
+
+        <button
+            type="button"
+            class="create-button"
+            [disabled]="isSubmitting() || form.invalid"
+            (click)="onSubmit()"
+        >
+            {{ isSubmitting() ? 'Creating...' : 'Create & select patient' }}
+        </button>
+    </div>
+</section>

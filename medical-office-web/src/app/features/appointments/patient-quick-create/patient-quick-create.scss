@@ -1,0 +1,165 @@
+
+:host {
+    display: block;
+    min-width: 0;
+}
+
+.quick-create {
+    display: grid;
+    gap: 20px;
+    padding: 20px;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    background: var(--color-background);
+}
+
+.quick-create-header {
+    h2 {
+        margin: 0 0 6px;
+        font-size: 1.125rem;
+        font-weight: 600;
+    }
+
+    p {
+        margin: 0;
+        color: var(--color-text-muted);
+        font-size: 0.875rem;
+    }
+}
+
+.patient-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+
+    label {
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    input {
+        width: 100%;
+        min-width: 0;
+        min-height: 42px;
+        padding: 10px 12px;
+        border: 1px solid var(--color-border);
+        border-radius: 8px;
+        background: var(--color-surface);
+        color: var(--color-text);
+        font: inherit;
+
+        &:focus-visible {
+            outline: 2px solid var(--color-text-muted);
+            outline-offset: 1px;
+        }
+
+        &[aria-invalid='true'] {
+            border-color: #e57373;
+        }
+    }
+}
+
+.dob-fieldset {
+    grid-column: 1 / -1;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+
+    legend {
+        margin-bottom: 8px;
+        padding: 0;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+}
+
+.field-error {
+    margin: 0;
+    color: #f28b82;
+    font-size: 0.8125rem;
+}
+
+.validation-summary {
+    color: #f28b82;
+    font-size: 0.875rem;
+
+    p {
+        margin: 0 0 8px;
+    }
+
+    ul {
+        margin: 0;
+        padding-left: 20px;
+    }
+}
+
+.quick-create-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding-top: 16px;
+    border-top: 1px solid var(--color-border);
+
+    button {
+        min-height: 42px;
+        padding: 10px 16px;
+        border-radius: 8px;
+        font: inherit;
+        font-size: 0.875rem;
+        font-weight: 600;
+        cursor: pointer;
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--color-text-muted);
+            outline-offset: 2px;
+        }
+    }
+}
+
+.cancel-button {
+    background: transparent;
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+}
+
+.create-button {
+    background: var(--color-nav-active);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+
+    &:hover:not(:disabled) {
+        border-color: var(--color-text-muted);
+    }
+}
+
+@media (max-width: 600px) {
+    .quick-create {
+        padding: 16px;
+    }
+
+    .patient-fields {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .quick-create-actions {
+        flex-direction: column-reverse;
+
+        button {
+            width: 100%;
+        }
+    }
+}

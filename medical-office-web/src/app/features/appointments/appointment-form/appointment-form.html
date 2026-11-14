@@ -11,23 +11,53 @@
     <app-error-message [message]="message" [retryable]="canRetry()" (retry)="loadOptions()" />
     } @else {
     <form [formGroup]="form" (ngSubmit)="onSubmit()">
+        
         <div class="form-field">
             <label for="patientId">Patient</label>
 
-            <select id="patientId" formControlName="patientId">
-                <option value="">Select a patient</option>
+            <div class="patient-selection-row">
+                <select
+                    id="patientId"
+                    formControlName="patientId"
+                    [disabled]="showPatientQuickCreate()"
+                >
+                    <option value="">Select a patient</option>
 
-                @for (patient of patients(); track patient.id) {
-                <option [value]="patient.id">
-                    {{ patient.firstName }} {{ patient.lastName }}
-                </option>
-                }
-            </select>
+                    @for (patient of patients(); track patient.id) {
+                        <option [value]="patient.id">
+                            {{ patient.firstName }} {{ patient.lastName }}
+                        </option>
+                    }
+                </select>
+
+                <button
+                    type="button"
+                    class="new-patient-button"
+                    [disabled]="isSubmitting() || showPatientQuickCreate()"
+                    [attr.aria-expanded]="showPatientQuickCreate()"
+                    aria-controls="patient-quick-create-panel"
+                    (click)="openPatientQuickCreate()"
+                >
+                    <span aria-hidden="true">+</span>
+                    New patient
+                </button>
+            </div>
 
             @if (patientId.touched && patientId.hasError('required')) {
-            <p class="field-error">Please select a patient.</p>
+                <p class="field-error">
+                    Please select a patient.
+                </p>
             }
         </div>
+
+        @if (showPatientQuickCreate()) {
+            <div id="patient-quick-create-panel">
+                <app-patient-quick-create
+                    (patientCreated)="onPatientCreated($event)"
+                    (cancelled)="closePatientQuickCreate()"
+                />
+            </div>
+        }
 
         <div class="form-field">
             <label for="doctorId">Doctor</label>
@@ -113,7 +143,8 @@
             </button>
 
             <button type="submit" class="submit-button"
-                [disabled]="isSubmitting() || isLoading() || patients().length === 0 || doctors().length === 0">
+                [disabled]="isSubmitting() || isLoading() || showPatientQuickCreate() || patients().length === 0 || doctors().length === 0"
+                >
                 {{ isSubmitting() ? 'Scheduling...' : 'Schedule appointment' }}
             </button>
         </div>
