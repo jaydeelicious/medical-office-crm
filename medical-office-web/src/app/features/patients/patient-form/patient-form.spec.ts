@@ -67,6 +67,44 @@ describe('PatientForm', () => {
         vi.spyOn(router, 'navigate').mockResolvedValue(true);
     });
 
+    function enterDob(
+        day: string,
+        month: string,
+        year: string,
+    ): void {
+        const values: Record<string, string> = {
+            day,
+            month,
+            year,
+        };
+
+        for (const [part, value] of Object.entries(values)) {
+            const input = fixture.nativeElement.querySelector(
+                `#dob-${part}`,
+            ) as HTMLInputElement | null;
+
+            if (!input) {
+                throw new Error(`DOB input '${part}' was not found.`);
+            }
+
+            input.value = value;
+            input.dispatchEvent(
+                new Event('input', { bubbles: true }),
+            );
+        }
+
+        fixture.detectChanges();
+    }
+
+    function fillRequiredFields(): void {
+        component.form.patchValue({
+            firstName: 'John',
+            lastName: 'Doe',
+        });
+
+        fixture.detectChanges();
+    }
+
 
     it('should start with an invalid empty form', () => {
         fixture.detectChanges();
@@ -299,4 +337,211 @@ describe('PatientForm', () => {
         expect(patientServiceMock.create).not.toHaveBeenCalled();
         expect(patientServiceMock.update).not.toHaveBeenCalled();
     });
+
+    describe('Date of birth integration', () => {
+        it('should allow an empty DOB and submit null', () => {
+            patientServiceMock.create.mockReturnValue(of(patient));
+
+            fixture.detectChanges();
+            fillRequiredFields();
+
+            expect(component.dateOfBirth.valid).toBe(true);
+
+            component.onSubmit();
+
+            expect(patientServiceMock.create).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    dateOfBirth: null,
+                }),
+            );
+        });
+
+        it('should submit a manually entered DOB as yyyy-MM-dd', () => {
+            patientServiceMock.create.mockReturnValue(of(patient));
+
+            fixture.detectChanges();
+            fillRequiredFields();
+
+            enterDob('21', '05', '1990');
+
+            expect(component.dateOfBirth.valid).toBe(true);
+            expect(component.dateOfBirth.value).toBe('1990-05-21');
+
+            component.onSubmit();
+
+            expect(patientServiceMock.create).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    dateOfBirth: '1990-05-21',
+                }),
+            );
+        });
+
+        it('should submit an unpadded DOB in ISO format', () => {
+            patientServiceMock.create.mockReturnValue(of(patient));
+
+            fixture.detectChanges();
+            fillRequiredFields();
+
+            enterDob('3', '5', '1990');
+
+            expect(component.dateOfBirth.valid).toBe(true);
+            expect(component.dateOfBirth.value).toBe('1990-05-03');
+
+            component.onSubmit();
+
+            expect(patientServiceMock.create).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    dateOfBirth: '1990-05-03',
+                }),
+            );
+        });
+
+        it('should reject an incomplete DOB and prevent submission', () => {
+            fixture.detectChanges();
+            fillRequiredFields();
+
+            enterDob('', '', '1990');
+
+            expect(component.dateOfBirth.invalid).toBe(true);
+            expect(component.dateOfBirth.hasError('incompleteDate')).toBe(true);
+            expect(component.form.invalid).toBe(true);
+
+            component.onSubmit();
+
+            expect(patientServiceMock.create).not.toHaveBeenCalled();
+        });
+
+        it('should reject an impossible DOB and prevent submission', () => {
+            fixture.detectChanges();
+            fillRequiredFields();
+
+            enterDob('31', '02', '1990');
+
+            expect(component.dateOfBirth.invalid).toBe(true);
+            expect(component.dateOfBirth.hasError('invalidDate')).toBe(true);
+            expect(component.form.invalid).toBe(true);
+
+            component.onSubmit();
+
+            expect(patientServiceMock.create).not.toHaveBeenCalled();
+        });
+
+        it('should reject a future DOB and prevent submission', () => {
+            fixture.detectChanges();
+            fillRequiredFields();
+
+            const futureYear = String(new Date().getFullYear() + 1);
+
+            enterDob('01', '01', futureYear);
+
+            expect(component.dateOfBirth.invalid).toBe(true);
+            expect(component.dateOfBirth.hasError('futureDate')).toBe(true);
+            expect(component.form.invalid).toBe(true);
+
+            component.onSubmit();
+
+            expect(patientServiceMock.create).not.toHaveBeenCalled();
+        });
+
+        it('should become valid after correcting an invalid DOB', () => {
+            fixture.detectChanges();
+            fillRequiredFields();
+
+            enterDob('31', '02', '1990');
+
+            expect(component.dateOfBirth.invalid).toBe(true);
+
+            enterDob('28', '02', '1990');
+
+            expect(component.dateOfBirth.valid).toBe(true);
+            expect(component.dateOfBirth.value).toBe('1990-02-28');
+            expect(component.form.valid).toBe(true);
+        });
+
+        it('should become valid after clearing an incomplete DOB', () => {
+            fixture.detectChanges();
+            fillRequiredFields();
+
+            enterDob('', '', '1990');
+
+            expect(component.dateOfBirth.invalid).toBe(true);
+
+            enterDob('', '', '');
+
+            expect(component.dateOfBirth.valid).toBe(true);
+            expect(component.dateOfBirth.value).toBe('');
+            expect(component.form.valid).toBe(true);
+        });
+
+        it('should populate DOB inputs when editing a patient', () => {
+            routeMock.snapshot.paramMap = convertToParamMap({
+                id: patient.id,
+            });
+
+            patientServiceMock.getById.mockReturnValue(of(patient));
+
+            fixture.detectChanges();
+
+            const dayInput = fixture.nativeElement.querySelector(
+                '#dob-day',
+            ) as HTMLInputElement;
+
+            const monthInput = fixture.nativeElement.querySelector(
+                '#dob-month',
+            ) as HTMLInputElement;
+
+            const yearInput = fixture.nativeElement.querySelector(
+                '#dob-year',
+            ) as HTMLInputElement;
+
+            expect(dayInput.value).toBe('21');
+            expect(monthInput.value).toBe('05');
+            expect(yearInput.value).toBe('1990');
+
+            expect(component.dateOfBirth.value).toBe('1990-05-21');
+        });
+
+        it('should update a patient with a changed DOB', () => {
+            routeMock.snapshot.paramMap = convertToParamMap({
+                id: patient.id,
+            });
+
+            patientServiceMock.getById.mockReturnValue(of(patient));
+            patientServiceMock.update.mockReturnValue(of(void 0));
+
+            fixture.detectChanges();
+
+            enterDob('15', '08', '1985');
+
+            expect(component.dateOfBirth.valid).toBe(true);
+
+            component.onSubmit();
+
+            expect(patientServiceMock.update).toHaveBeenCalledWith(
+                patient.id,
+                expect.objectContaining({
+                    dateOfBirth: '1985-08-15',
+                }),
+            );
+        });
+
+        it('should not update a patient with an invalid DOB', () => {
+            routeMock.snapshot.paramMap = convertToParamMap({
+                id: patient.id,
+            });
+
+            patientServiceMock.getById.mockReturnValue(of(patient));
+
+            fixture.detectChanges();
+
+            enterDob('31', '04', '1990');
+
+            expect(component.form.invalid).toBe(true);
+
+            component.onSubmit();
+
+            expect(patientServiceMock.update).not.toHaveBeenCalled();
+        });
+    });
+
 });
