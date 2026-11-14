@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   Component,
+  computed,
   DestroyRef,
   inject,
   OnInit,
@@ -34,6 +35,39 @@ export class Doctors implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly doctors = signal<Doctor[]>([]);
+
+  readonly searchQuery = signal('');
+
+  readonly filteredDoctors = computed(() => {
+    const query = this.searchQuery().trim().toLocaleLowerCase();
+
+    if (!query) {
+      return this.doctors();
+    }
+
+    return this.doctors().filter(doctor => {
+      const fullName = `${doctor.firstName} ${doctor.lastName}`.toLocaleLowerCase();
+
+      const reverseName = `${doctor.lastName} ${doctor.firstName}`.toLocaleLowerCase();
+
+      return (
+        fullName.includes(query) ||
+        reverseName.includes(query) ||
+        doctor.specialty.toLocaleLowerCase().includes(query) ||
+        (doctor.email ?? '').toLocaleLowerCase().includes(query) ||
+        (doctor.phone ?? '').includes(query)
+      );
+    });
+  });
+
+  updateSearch(query: string): void {
+    this.searchQuery.set(query);
+  }
+
+  clearSearch(): void {
+    this.searchQuery.set('');
+  }
+
   readonly isLoading = signal(false);
   readonly errorMessage = signal<string | null>(null);
   readonly canRetry = signal(false);
