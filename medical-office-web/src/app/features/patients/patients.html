@@ -11,6 +11,30 @@
     </a>
   </header>
 
+  <div class="patient-search">
+      <div class="search-input-wrapper">
+          <input
+              id="patientSearch"
+              type="search"
+              placeholder="Search by name, email or phone..."
+              aria-label="Search patients"
+              autocomplete="off"
+              [value]="searchQuery()"
+              (input)="updateSearch($any($event.target).value)"
+          />
+      </div>
+
+      @if (searchQuery()) {
+          <button
+              type="button"
+              class="clear-search-button"
+              (click)="clearSearch()"
+          >
+              Clear
+          </button>
+      }
+  </div>
+
   @if (deleteError(); as message) {
     <div class="delete-error">
       <app-error-message [message]="message" />
@@ -32,7 +56,12 @@
       title="No patients found"
       description="There are no patient records to display."
     />
-  } @else {
+  } @else if (filteredPatients().length === 0) {
+    <app-empty-state
+        title="No matching patients"
+        description="Try another name, email or phone number."
+    /> 
+    } @else {
     <div class="table-container">
       <table>
         <thead>
@@ -46,7 +75,7 @@
         </thead>
 
         <tbody>
-          @for (patient of patients(); track patient.id) {
+          @for (patient of filteredPatients(); track patient.id) {
             <tr>
               <td class="patient-name">
                 {{ patient.firstName }}

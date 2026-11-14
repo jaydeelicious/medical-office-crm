@@ -22,6 +22,30 @@ describe('Patients', () => {
         dateOfBirth: '1990-05-21',
     };
 
+    const additionalPatients: Patient[] = [
+        {
+            id: 'c1234567-b491-4e62-8519-d1f197c1a12e',
+            firstName: 'Maria',
+            lastName: 'Papadopoulou',
+            phone: '6974561230',
+            email: 'maria@example.com',
+            dateOfBirth: '1985-03-15',
+        },
+        {
+            id: 'd1234567-b491-4e62-8519-d1f197c1a12e',
+            firstName: 'Jane',
+            lastName: 'Smith',
+            phone: '6982345678',
+            email: 'jane@example.com',
+            dateOfBirth: null,
+        },
+    ];
+
+    const allPatients: Patient[] = [
+        patient,
+        ...additionalPatients,
+    ];
+
     const patientServiceMock = {
         getAll: vi.fn(),
         delete: vi.fn(),
@@ -53,6 +77,23 @@ describe('Patients', () => {
         fixture = TestBed.createComponent(Patients);
         component = fixture.componentInstance;
     });
+
+    function searchPatients(query: string): void {
+        const searchInput = fixture.nativeElement.querySelector(
+            '#patientSearch',
+        ) as HTMLInputElement;
+
+        if (!searchInput) {
+            throw new Error('Patient search input was not found.');
+        }
+
+        searchInput.value = query;
+        searchInput.dispatchEvent(
+            new Event('input', { bubbles: true }),
+        );
+
+        fixture.detectChanges();
+    }
 
     it('should load and display patients', () => {
         patientServiceMock.getAll.mockReturnValue(of([patient]));
@@ -411,5 +452,204 @@ describe('Patients', () => {
         );
     });
 
+    describe('Patient search', () => {
+        beforeEach(() => {
+            patientServiceMock.getAll.mockReturnValue(of(allPatients));
+            fixture.detectChanges();
+        });
 
+        it('should show all patients when search is empty', () => {
+            expect(component.searchQuery()).toBe('');
+            expect(component.filteredPatients()).toEqual(allPatients);
+        });
+
+        it('should search by first name', () => {
+            searchPatients('Maria');
+
+            expect(component.filteredPatients()).toEqual([
+                additionalPatients[0],
+            ]);
+        });
+
+        it('should search by last name', () => {
+            searchPatients('Smith');
+
+            expect(component.filteredPatients()).toEqual([
+                additionalPatients[1],
+            ]);
+        });
+
+        it('should search by full name', () => {
+            searchPatients('Maria Papadopoulou');
+
+            expect(component.filteredPatients()).toEqual([
+                additionalPatients[0],
+            ]);
+        });
+
+        it('should search by reversed full name', () => {
+            searchPatients('Papadopoulou Maria');
+
+            expect(component.filteredPatients()).toEqual([
+                additionalPatients[0],
+            ]);
+        });
+
+        it('should search case-insensitively', () => {
+            searchPatients('MARIA');
+
+            expect(component.filteredPatients()).toEqual([
+                additionalPatients[0],
+            ]);
+        });
+
+        it('should ignore surrounding whitespace', () => {
+            searchPatients('   Maria   ');
+
+            expect(component.filteredPatients()).toEqual([
+                additionalPatients[0],
+            ]);
+        });
+
+        it('should search by email', () => {
+            searchPatients('jane@example.com');
+
+            expect(component.filteredPatients()).toEqual([
+                additionalPatients[1],
+            ]);
+        });
+
+        it('should search by partial email', () => {
+            searchPatients('maria@');
+
+            expect(component.filteredPatients()).toEqual([
+                additionalPatients[0],
+            ]);
+        });
+
+        it('should search by phone number', () => {
+            searchPatients('697456');
+
+            expect(component.filteredPatients()).toEqual([
+                additionalPatients[0],
+            ]);
+        });
+
+        it('should handle patients with null email and phone', () => {
+            searchPatients('John');
+
+            expect(component.filteredPatients()).toEqual([patient]);
+        });
+
+        it('should display only matching patients in the table', () => {
+            searchPatients('Maria');
+
+            const rows = fixture.nativeElement.querySelectorAll(
+                'tbody tr',
+            ) as NodeListOf<HTMLTableRowElement>;
+
+            expect(rows.length).toBe(1);
+            expect(rows[0].textContent).toContain('Maria');
+            expect(rows[0].textContent).toContain('Papadopoulou');
+            expect(rows[0].textContent).not.toContain('Jane');
+        });
+
+        it('should display a dedicated empty state when no matches exist', () => {
+            searchPatients('Nonexistent Patient');
+
+            expect(component.filteredPatients()).toEqual([]);
+
+            expect(fixture.nativeElement.textContent).toContain(
+                'No matching patients',
+            );
+
+            expect(fixture.nativeElement.textContent).toContain(
+                'Try another name, email or phone number.',
+            );
+        });
+
+        it('should restore all patients after clearing search', () => {
+            searchPatients('Maria');
+
+            expect(component.filteredPatients().length).toBe(1);
+
+            const clearButton = fixture.nativeElement.querySelector(
+                '.clear-search-button',
+            ) as HTMLButtonElement;
+
+            expect(clearButton).not.toBeNull();
+
+            clearButton.click();
+            fixture.detectChanges();
+
+            expect(component.searchQuery()).toBe('');
+            expect(component.filteredPatients()).toEqual(allPatients);
+
+            const searchInput = fixture.nativeElement.querySelector(
+                '#patientSearch',
+            ) as HTMLInputElement;
+
+            expect(searchInput.value).toBe('');
+        });
+
+        it('should treat whitespace-only search as empty', () => {
+            searchPatients('    ');
+
+            expect(component.filteredPatients()).toEqual(allPatients);
+        });
+
+        it('should not make additional API calls while searching', () => {
+            searchPatients('M');
+            searchPatients('Ma');
+            searchPatients('Maria');
+
+            expect(patientServiceMock.getAll).toHaveBeenCalledOnce();
+        });
+
+        it('should update search results after deleting a matching patient', () => {
+            patientServiceMock.delete.mockReturnValue(of(void 0));
+
+            searchPatients('Maria');
+
+            expect(component.filteredPatients()).toEqual([
+                additionalPatients[0],
+            ]);
+
+            component.requestDelete(additionalPatients[0]);
+            component.confirmDelete();
+            fixture.detectChanges();
+
+            expect(patientServiceMock.delete).toHaveBeenCalledWith(
+                additionalPatients[0].id,
+            );
+
+            expect(component.filteredPatients()).toEqual([]);
+
+            expect(fixture.nativeElement.textContent).toContain(
+                'No matching patients',
+            );
+
+            expect(component.patients().length).toBe(2);
+        });
+
+        it('should retain search results when deletion fails', () => {
+            patientServiceMock.delete.mockReturnValue(
+                throwError(
+                    () => new HttpErrorResponse({ status: 500 }),
+                ),
+            );
+
+            searchPatients('Maria');
+
+            component.requestDelete(additionalPatients[0]);
+            component.confirmDelete();
+            fixture.detectChanges();
+
+            expect(component.filteredPatients()).toEqual([
+                additionalPatients[0],
+            ]);
+
+            expect(component.searchQuery()).toBe('Maria');
+        });
+    });
 });

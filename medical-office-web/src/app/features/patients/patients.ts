@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DestroyRef } from '@angular/core';
 
@@ -30,6 +30,37 @@ export class Patients implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly patients = signal<Patient[]>([]);
+  readonly searchQuery = signal('');
+
+  readonly filteredPatients = computed(() => {
+    const query = this.searchQuery().trim().toLocaleLowerCase();
+
+    if (!query) {
+      return this.patients();
+    }
+
+    return this.patients().filter(patient => {
+      const fullName = `${patient.firstName} ${patient.lastName}`.toLocaleLowerCase();
+
+      const reverseName = `${patient.lastName} ${patient.firstName}`.toLocaleLowerCase();
+
+      return (
+        fullName.includes(query) ||
+        reverseName.includes(query) ||
+        (patient.email ?? '').toLocaleLowerCase().includes(query) ||
+        (patient.phone ?? '').includes(query)
+      );
+    });
+  });
+
+  updateSearch(query: string): void {
+    this.searchQuery.set(query);
+  }
+
+  clearSearch(): void {
+    this.searchQuery.set('');
+  }
+
   readonly isLoading = signal(false);
   readonly errorMessage = signal<string | null>(null);
   readonly canRetry = signal(false);
