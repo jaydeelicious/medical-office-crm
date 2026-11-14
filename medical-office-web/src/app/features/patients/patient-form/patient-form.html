@@ -91,10 +91,13 @@
                 }
             </div>
 
-            <div class="form-field">
-                <label for="dateOfBirth">Date of birth</label>
-                <input id="dateOfBirth" type="date" formControlName="dateOfBirth" />
-            </div>
+            <fieldset class="form-field dob-fieldset">
+                <legend>Date of birth</legend>
+
+                <app-date-of-birth-picker
+                    formControlName="dateOfBirth"
+                />
+            </fieldset>
         </div>
 
         <div class="form-actions">

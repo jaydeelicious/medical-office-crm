@@ -6,6 +6,8 @@ import {
     forwardRef,
     signal,
     inject,
+    Injector,
+    afterRenderEffect,
 } from '@angular/core';
 import {
     ControlValueAccessor,
@@ -37,6 +39,7 @@ type DatePart = 'day' | 'month' | 'year';
 })
 export class DateOfBirthPicker implements ControlValueAccessor, Validator {
     private readonly elementRef = inject(ElementRef<HTMLElement>);
+    private readonly injector = inject(Injector);
 
     readonly fields: { key: DatePart; label: string }[] = [
         { key: 'day', label: 'Day' },
@@ -58,6 +61,39 @@ export class DateOfBirthPicker implements ControlValueAccessor, Validator {
     private onChange: (value: string) => void = () => undefined;
     private onTouched: () => void = () => undefined;
     private onValidatorChange: () => void = () => undefined;
+
+    constructor() {
+        afterRenderEffect(() => {
+            const openField = this.openField();
+
+            if (openField !== 'year' || this.filterOptions()) {
+                return;
+            }
+
+            const year = this.year() || '2000';
+
+            const container: HTMLElement | null =
+                this.elementRef.nativeElement.querySelector(
+                    '#dob-options-year',
+                );
+
+            const target: HTMLElement | null =
+                container?.querySelector(
+                    `[data-year="${year}"]`,
+                ) ?? null;
+
+            if (!container || !target) return;
+
+            const containerRect = container.getBoundingClientRect();
+            const targetRect = target.getBoundingClientRect();
+
+            container.scrollTop +=
+                targetRect.top -
+                containerRect.top -
+                container.clientHeight / 2 +
+                target.clientHeight / 2;
+        });
+    }
 
     valueOf(part: DatePart): string {
         switch (part) {
@@ -105,7 +141,21 @@ export class DateOfBirthPicker implements ControlValueAccessor, Validator {
         }
 
         const query = this.valueOf(part);
-        return options.filter(option => option.startsWith(query));
+
+        if (!query) {
+          return options;
+        }
+
+        if (part === 'year') {
+          return options.filter(option => option.startsWith(query));
+        }
+
+        return options.filter(option => {
+            const numericOption = String(Number(option));
+
+            return option.startsWith(query) ||
+                numericOption.startsWith(query);
+        });
     }
 
     readonly filterOptions = signal(false);
@@ -130,11 +180,16 @@ export class DateOfBirthPicker implements ControlValueAccessor, Validator {
 
         if (this.openField() === part) {
             this.closeDropdown();
-        } else {
-            this.openField.set(part);
-            this.filterOptions.set(false);
-            this.activeIndex.set(0);
+            return;
         }
+
+        this.openField.set(part);
+        this.filterOptions.set(false);
+
+        const options = this.optionsFor(part);
+        const selectedIndex = options.indexOf(this.valueOf(part));
+
+        this.activeIndex.set(Math.max(0, selectedIndex));
     }
 
     selectOption(part: DatePart, value: string): void {
@@ -291,6 +346,28 @@ export class DateOfBirthPicker implements ControlValueAccessor, Validator {
         }
 
         return null;
+    }
+
+    normalizePart(part: DatePart): void {
+        if (part === 'year') {
+            return;
+        }
+
+        const value = this.valueOf(part);
+
+        if (!value || value.length !== 1) {
+            return;
+        }
+
+        const number = Number(value);
+        const maximum = part === 'day' ? 31 : 12;
+
+        if (number < 1 || number > maximum) {
+            return;
+        }
+
+        this.setPart(part, value.padStart(2, '0'));
+        this.emitValue();
     }
 
     private emitValue(): void {

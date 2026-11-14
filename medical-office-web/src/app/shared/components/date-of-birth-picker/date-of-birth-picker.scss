@@ -75,6 +75,11 @@
     color: var(--color-text-muted);
     cursor: pointer;
 
+    svg {
+        display: block;
+        transition: transform 0.15s ease;
+    }
+
     &:hover:not(:disabled) {
         color: var(--color-text);
     }

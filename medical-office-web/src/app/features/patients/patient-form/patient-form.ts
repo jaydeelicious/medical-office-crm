@@ -20,6 +20,7 @@ import { CreatePatientRequest, Patient } from '../patient.model';
 import { PatientService } from '../patient.service';
 import { LoadingIndicator } from '../../../shared/components/loading-indicator/loading-indicator';
 import { ErrorMessage } from '../../../shared/components/error-message/error-message';
+import { DateOfBirthPicker } from '../../../shared/components/date-of-birth-picker/date-of-birth-picker';
 
 @Component({
     selector: 'app-patient-form',
@@ -27,6 +28,7 @@ import { ErrorMessage } from '../../../shared/components/error-message/error-mes
         ReactiveFormsModule,
         LoadingIndicator,
         ErrorMessage,
+        DateOfBirthPicker,
     ],
     templateUrl: './patient-form.html',
     styleUrl: './patient-form.scss',
