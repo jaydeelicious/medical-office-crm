@@ -23,6 +23,8 @@ import { DoctorService } from '../../doctors/doctor.service';
 import { AppointmentService } from '../appointment.service';
 import { CreateAppointmentRequest } from '../appointment.model';
 
+import { PatientQuickCreate } from '../patient-quick-create/patient-quick-create';
+
 import { appointmentTimeValidator } from '../validators/appointment-time.validator';
 
 import { LoadingIndicator } from '../../../shared/components/loading-indicator/loading-indicator';
@@ -40,6 +42,7 @@ import {
         ReactiveFormsModule,
         LoadingIndicator,
         ErrorMessage,
+        PatientQuickCreate,
     ],
     templateUrl: './appointment-form.html',
     styleUrl: './appointment-form.scss',
@@ -56,6 +59,7 @@ export class AppointmentForm implements OnInit {
 
     readonly patients = signal<Patient[]>([]);
     readonly doctors = signal<Doctor[]>([]);
+    readonly showPatientQuickCreate = signal(false);
 
     readonly isLoading = signal(false);
     readonly errorMessage = signal<string | null>(null);
@@ -111,7 +115,10 @@ export class AppointmentForm implements OnInit {
 
 
     onSubmit(): void {
-        if (this.isSubmitting() || this.isLoading()) {
+        if (
+            this.isSubmitting() || 
+            this.isLoading() ||
+            this.showPatientQuickCreate()) {
             return;
         }
 
@@ -201,6 +208,38 @@ export class AppointmentForm implements OnInit {
             .flat();
 
         this.validationErrors.set(messages);
+    }
+
+    openPatientQuickCreate(): void {
+        if (this.isSubmitting() || this.isLoading()) {
+            return;
+        }
+
+        this.showPatientQuickCreate.set(true);
+    }
+
+    closePatientQuickCreate(): void {
+        this.showPatientQuickCreate.set(false);
+    }
+
+    onPatientCreated(patient: Patient): void {
+        // Add the new patient without reloading the entire list.
+        this.patients.update(patients => [
+            ...patients.filter(existing => existing.id !== patient.id),
+            patient,
+        ]);
+
+        // Automatically select the newly created patient.
+        this.patientId.setValue(patient.id);
+        this.patientId.markAsDirty();
+        this.patientId.updateValueAndValidity();
+
+        // Clear errors related to patient selection.
+        this.submitError.set(null);
+        this.validationErrors.set([]);
+
+        // Close the quick-create panel.
+        this.showPatientQuickCreate.set(false);
     }
 
     private getSubmitErrorMessage(error: unknown): string {
