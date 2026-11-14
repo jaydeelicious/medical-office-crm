@@ -22,6 +22,38 @@ describe('Doctors', () => {
     phone: '2101234567',
   };
 
+  const additionalDoctors: Doctor[] = [
+      {
+          id: 'c1234567-b491-4e62-8519-d1f197c1a12e',
+          firstName: 'Maria',
+          lastName: 'Papadopoulou',
+          specialty: 'Dermatology',
+          email: 'maria@example.com',
+          phone: '6974561230',
+      },
+      {
+          id: 'd1234567-b491-4e62-8519-d1f197c1a12e',
+          firstName: 'George',
+          lastName: 'Nikolaou',
+          specialty: 'Neurology',
+          email: null,
+          phone: null,
+      },
+      {
+          id: 'e1234567-b491-4e62-8519-d1f197c1a12e',
+          firstName: 'Anna',
+          lastName: 'Brown',
+          specialty: 'Cardiology',
+          email: 'anna@example.com',
+          phone: '6982345678',
+      },
+  ];
+
+  const allDoctors: Doctor[] = [
+      doctor,
+      ...additionalDoctors,
+  ];
+
   const doctorServiceMock = {
     getAll: vi.fn(),
     delete: vi.fn(),
@@ -53,6 +85,23 @@ describe('Doctors', () => {
     fixture = TestBed.createComponent(Doctors);
     component = fixture.componentInstance;
   });
+
+  function searchDoctors(query: string): void {
+      const searchInput = fixture.nativeElement.querySelector(
+          '#doctorSearch',
+      ) as HTMLInputElement | null;
+
+      if (!searchInput) {
+          throw new Error('Doctor search input was not found.');
+      }
+
+      searchInput.value = query;
+      searchInput.dispatchEvent(
+          new Event('input', { bubbles: true }),
+      );
+
+      fixture.detectChanges();
+  }
 
   it('should load and display doctors', () => {
     doctorServiceMock.getAll.mockReturnValue(of([doctor]));
@@ -381,4 +430,226 @@ describe('Doctors', () => {
     );
   });
 
+  describe('Doctor search', () => {
+      beforeEach(() => {
+          doctorServiceMock.getAll.mockReturnValue(of(allDoctors));
+          fixture.detectChanges();
+      });
+
+      it('should initially display all doctors', () => {
+          expect(component.searchQuery()).toBe('');
+          expect(component.filteredDoctors()).toEqual(allDoctors);
+
+          const rows = fixture.nativeElement.querySelectorAll('tbody tr');
+          expect(rows.length).toBe(4);
+      });
+
+      it('should search by first name', () => {
+          searchDoctors('Maria');
+
+          expect(component.filteredDoctors()).toEqual([
+              additionalDoctors[0],
+          ]);
+      });
+
+      it('should search by last name', () => {
+          searchDoctors('Nikolaou');
+
+          expect(component.filteredDoctors()).toEqual([
+              additionalDoctors[1],
+          ]);
+      });
+
+      it('should search by full name', () => {
+          searchDoctors('Maria Papadopoulou');
+
+          expect(component.filteredDoctors()).toEqual([
+              additionalDoctors[0],
+          ]);
+      });
+
+      it('should search by reversed full name', () => {
+          searchDoctors('Papadopoulou Maria');
+
+          expect(component.filteredDoctors()).toEqual([
+              additionalDoctors[0],
+          ]);
+      });
+
+      it('should search case-insensitively', () => {
+          searchDoctors('MARIA');
+
+          expect(component.filteredDoctors()).toEqual([
+              additionalDoctors[0],
+          ]);
+      });
+
+      it('should ignore surrounding whitespace', () => {
+          searchDoctors('   Maria   ');
+
+          expect(component.filteredDoctors()).toEqual([
+              additionalDoctors[0],
+          ]);
+      });
+
+      it('should search by specialty', () => {
+          searchDoctors('Dermatology');
+
+          expect(component.filteredDoctors()).toEqual([
+              additionalDoctors[0],
+          ]);
+      });
+
+      it('should return multiple doctors with the same specialty', () => {
+          searchDoctors('Cardiology');
+
+          expect(component.filteredDoctors()).toEqual([
+              doctor,
+              additionalDoctors[2],
+          ]);
+      });
+
+      it('should search specialty case-insensitively', () => {
+          searchDoctors('NEUROLOGY');
+
+          expect(component.filteredDoctors()).toEqual([
+              additionalDoctors[1],
+          ]);
+      });
+
+      it('should search by partial email', () => {
+          searchDoctors('maria@');
+
+          expect(component.filteredDoctors()).toEqual([
+              additionalDoctors[0],
+          ]);
+      });
+
+      it('should search by phone number', () => {
+          searchDoctors('697456');
+
+          expect(component.filteredDoctors()).toEqual([
+              additionalDoctors[0],
+          ]);
+      });
+
+      it('should handle doctors with null email and phone', () => {
+          searchDoctors('George');
+
+          expect(component.filteredDoctors()).toEqual([
+              additionalDoctors[1],
+          ]);
+      });
+
+      it('should display only matching doctors in the table', () => {
+          searchDoctors('Dermatology');
+
+          const rows = fixture.nativeElement.querySelectorAll(
+              'tbody tr',
+          ) as NodeListOf<HTMLTableRowElement>;
+
+          expect(rows.length).toBe(1);
+          expect(rows[0].textContent).toContain('Maria');
+          expect(rows[0].textContent).toContain('Dermatology');
+          expect(rows[0].textContent).not.toContain('Jane');
+      });
+
+      it('should show a dedicated empty state for no matches', () => {
+          searchDoctors('Nonexistent Specialty');
+
+          expect(component.filteredDoctors()).toEqual([]);
+
+          expect(fixture.nativeElement.textContent).toContain(
+              'No matching doctors',
+          );
+
+          expect(fixture.nativeElement.textContent).toContain(
+              'Try another name, specialty, email or phone number.',
+          );
+      });
+
+      it('should restore all doctors after clearing search', () => {
+          searchDoctors('Maria');
+
+          expect(component.filteredDoctors().length).toBe(1);
+
+          const clearButton = fixture.nativeElement.querySelector(
+              '.clear-search-button',
+          ) as HTMLButtonElement;
+
+          expect(clearButton).not.toBeNull();
+
+          clearButton.click();
+          fixture.detectChanges();
+
+          expect(component.searchQuery()).toBe('');
+          expect(component.filteredDoctors()).toEqual(allDoctors);
+
+          const searchInput = fixture.nativeElement.querySelector(
+              '#doctorSearch',
+          ) as HTMLInputElement;
+
+          expect(searchInput.value).toBe('');
+      });
+
+      it('should treat whitespace-only search as empty', () => {
+          searchDoctors('   ');
+
+          expect(component.filteredDoctors()).toEqual(allDoctors);
+      });
+
+      it('should not make additional API calls while searching', () => {
+          searchDoctors('M');
+          searchDoctors('Ma');
+          searchDoctors('Maria');
+
+          expect(doctorServiceMock.getAll).toHaveBeenCalledOnce();
+      });
+
+      it('should update filtered results after deleting a doctor', () => {
+          doctorServiceMock.delete.mockReturnValue(of(void 0));
+
+          searchDoctors('Maria');
+
+          expect(component.filteredDoctors()).toEqual([
+              additionalDoctors[0],
+          ]);
+
+          component.requestDelete(additionalDoctors[0]);
+          component.confirmDelete();
+          fixture.detectChanges();
+
+          expect(doctorServiceMock.delete).toHaveBeenCalledWith(
+              additionalDoctors[0].id,
+          );
+
+          expect(component.filteredDoctors()).toEqual([]);
+          expect(component.doctors().length).toBe(3);
+
+          expect(fixture.nativeElement.textContent).toContain(
+              'No matching doctors',
+          );
+      });
+
+      it('should preserve search results when deletion fails', () => {
+          doctorServiceMock.delete.mockReturnValue(
+              throwError(
+                  () => new HttpErrorResponse({ status: 500 }),
+              ),
+          );
+
+          searchDoctors('Maria');
+
+          component.requestDelete(additionalDoctors[0]);
+          component.confirmDelete();
+          fixture.detectChanges();
+
+          expect(component.filteredDoctors()).toEqual([
+              additionalDoctors[0],
+          ]);
+
+          expect(component.searchQuery()).toBe('Maria');
+          expect(component.doctors()).toEqual(allDoctors);
+      });
+  });
 });
