@@ -11,7 +11,30 @@
     </a>
   </header>
 
-  
+  <div class="doctor-search">
+      <div class="search-input-wrapper">
+          <input
+              id="doctorSearch"
+              type="search"
+              placeholder="Search by name, specialty, email or phone..."
+              aria-label="Search doctors"
+              autocomplete="off"
+              [value]="searchQuery()"
+              (input)="updateSearch($any($event.target).value)"
+          />
+      </div>
+
+      @if (searchQuery()) {
+          <button
+              type="button"
+              class="clear-search-button"
+              (click)="clearSearch()"
+          >
+              Clear
+          </button>
+      }
+  </div>
+
   @if (deleteError(); as message) {
   <div class="delete-error">
     <app-error-message [message]="message" />
@@ -30,9 +53,14 @@
     />
   } @else if (doctors().length === 0) {
     <app-empty-state
-      title="No doctors found"
-      description="There are no doctor records to display."
+        title="No doctors found"
+        description="There are no doctor records to display."
     />
+  } @else if (filteredDoctors().length === 0) {
+      <app-empty-state
+          title="No matching doctors"
+          description="Try another name, specialty, email or phone number."
+      />
   } @else {
     <div class="table-container">
       <table>
@@ -47,7 +75,7 @@
         </thead>
 
         <tbody>
-          @for (doctor of doctors(); track doctor.id) {
+          @for (doctor of filteredDoctors(); track doctor.id) {
             <tr>
               <td class="doctor-name">
                 {{ doctor.firstName }}
