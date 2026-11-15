@@ -85,25 +85,62 @@
             <p class="field-error">Please select a date.</p>
             }
         </div>
-
+        
         <div class="time-fields">
             <div class="form-field">
                 <label for="startTime">Start time</label>
-                <input id="startTime" type="time" formControlName="startTime" />
+
+                <input
+                    id="startTime"
+                    type="time"
+                    formControlName="startTime"
+                    step="900"
+                />
 
                 @if (startTime.touched && startTime.hasError('required')) {
-                <p class="field-error">Please select a start time.</p>
+                    <p class="field-error">
+                        Please select a start time.
+                    </p>
                 }
             </div>
 
             <div class="form-field">
-                <label for="endTime">End time</label>
-                <input id="endTime" type="time" formControlName="endTime" />
+                <label for="duration">Duration (minutes)</label>
 
-                @if (endTime.touched && endTime.hasError('required')) {
-                <p class="field-error">Please select an end time.</p>
+                <input
+                    id="duration"
+                    type="number"
+                    formControlName="duration"
+                    min="0"
+                    max="1439"
+                    step="10"
+                />
+
+                @if (duration.touched && duration.invalid) {
+                    <p class="field-error">
+                        Enter a valid duration in whole minutes.
+                    </p>
                 }
             </div>
+        </div>
+
+        <div class="calculated-time-section">
+            <div class="calculated-time-header">
+                <span class="calculated-time-label">
+                    Calculated end time
+                </span>
+
+                <strong class="calculated-time-value">
+                    {{ endTime.value || '—' }}
+                </strong>
+            </div>
+
+            @if (isEndTimeOverflow()) {
+                <p class="field-error">
+                    The appointment extends past midnight.
+                    Choose an earlier start time or shorter duration.
+                </p>
+            }
         </div>
 
         @if (form.touched && form.hasError('invalidTimeRange')) {
