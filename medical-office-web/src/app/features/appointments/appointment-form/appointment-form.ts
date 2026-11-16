@@ -26,6 +26,12 @@ import { CreateAppointmentRequest } from '../appointment.model';
 import { PatientQuickCreate } from '../patient-quick-create/patient-quick-create';
 
 import { appointmentTimeValidator } from '../validators/appointment-time.validator';
+import { appointmentFutureValidator } from '../validators/appointment-future.validator';
+
+import {
+    calculateEndTime,
+    getLocalToday,
+} from '../utils/appointment-datetime.utils';
 
 import { LoadingIndicator } from '../../../shared/components/loading-indicator/loading-indicator';
 import { ErrorMessage } from '../../../shared/components/error-message/error-message';
@@ -61,6 +67,8 @@ export class AppointmentForm implements OnInit {
     readonly doctors = signal<Doctor[]>([]);
     readonly showPatientQuickCreate = signal(false);
 
+    readonly isEndTimeOverflow = signal(false);
+
     readonly isLoading = signal(false);
     readonly errorMessage = signal<string | null>(null);
     readonly canRetry = signal(false);
@@ -73,17 +81,30 @@ export class AppointmentForm implements OnInit {
         {
             patientId: ['', Validators.required],
             doctorId: ['', Validators.required],
-            date: ['', Validators.required],
-            startTime: ['', Validators.required],
-            endTime: ['', Validators.required],
+            date: [getLocalToday(), Validators.required],
+            startTime: ['10:00', Validators.required],
+            duration: [
+                30,
+                [
+                    Validators.required,
+                    Validators.min(1),
+                    Validators.max(1439),
+                    Validators.pattern(/^\d+$/),
+                ],
+            ],
+            endTime: ['10:30', Validators.required],
             notes: ['', Validators.maxLength(1000)],
         },
         {
-            validators: appointmentTimeValidator,
+            validators: [
+                appointmentTimeValidator,
+                appointmentFutureValidator,
+            ],
         },
     );
 
     ngOnInit(): void {
+        this.setupTimeCalculation();
         this.loadOptions();
     }
 
@@ -123,6 +144,9 @@ export class AppointmentForm implements OnInit {
         }
 
         this.form.markAllAsTouched();
+
+        // Recheck against the current time when the user submits.
+        this.form.updateValueAndValidity();
 
         if (this.form.invalid) {
             return;
@@ -174,6 +198,33 @@ export class AppointmentForm implements OnInit {
         }
 
         void this.router.navigate(['/appointments']);
+    }
+    
+    private setupTimeCalculation(): void {
+        this.startTime.valueChanges
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(() => this.updateCalculatedEndTime());
+
+        this.duration.valueChanges
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(() => this.updateCalculatedEndTime());
+    }
+
+    private updateCalculatedEndTime(): void {
+        const calculated = this.duration.valid
+            ? calculateEndTime(
+                this.startTime.value,
+                this.duration.value,
+            )
+            : null;
+
+        this.isEndTimeOverflow.set(
+            this.duration.valid &&
+            this.startTime.valid &&
+            calculated === null,
+        );
+
+        this.endTime.setValue(calculated ?? '');
     }
 
     private handleSubmitError(error: unknown): void {
@@ -315,6 +366,10 @@ export class AppointmentForm implements OnInit {
 
     get startTime() {
         return this.form.controls.startTime;
+    }
+
+    get duration() {
+        return this.form.controls.duration;
     }
 
     get endTime() {

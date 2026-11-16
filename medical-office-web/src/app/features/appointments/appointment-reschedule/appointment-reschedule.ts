@@ -1,4 +1,3 @@
-
 import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -25,10 +24,16 @@ import { AppointmentService } from '../appointment.service';
 
 import { appointmentTimeValidator } from '../validators/appointment-time.validator';
 
+import { 
+    calculateDuration,
+    calculateEndTime,
+} from '../utils/appointment-datetime.utils';
+
 import { LoadingIndicator } from '../../../shared/components/loading-indicator/loading-indicator';
 import { ErrorMessage } from '../../../shared/components/error-message/error-message';
 
 import { getAppointmentConflictCode } from '../appointment-conflict.utils';
+import { appointmentFutureValidator } from '../validators/appointment-future.validator';
 
 @Component({
     selector: 'app-appointment-reschedule',
@@ -57,15 +62,28 @@ export class AppointmentReschedule implements OnInit {
     readonly submitError = signal<string | null>(null);
     readonly validationErrors = signal<string[]>([]);
     readonly hasConflict = signal(false);
+    readonly isEndTimeOverflow = signal(false);
 
     readonly form = this.fb.group(
         {
             date: ['', Validators.required],
             startTime: ['', Validators.required],
+            duration: [
+                30,
+                [
+                    Validators.required,
+                    Validators.min(1),
+                    Validators.max(1439),
+                    Validators.pattern(/^\d+$/), 
+                ],
+            ],
             endTime: ['', Validators.required],
         },
         {
-            validators: appointmentTimeValidator,
+            validators: [
+                appointmentTimeValidator,
+                appointmentFutureValidator,
+            ],
         },
     );
 
@@ -82,6 +100,7 @@ export class AppointmentReschedule implements OnInit {
     }
 
     ngOnInit(): void {
+        this.setupTimeCalculation();
         this.loadAppointment();
     }
 
@@ -111,11 +130,39 @@ export class AppointmentReschedule implements OnInit {
                     this.appointment.set(appointment);
 
                     // Preserve local office time without UTC conversion.
-                    this.form.patchValue({
-                        date: appointment.startTime.slice(0, 10),
-                        startTime: appointment.startTime.slice(11, 16),
-                        endTime: appointment.endTime.slice(11, 16),
-                    });
+                    const startTime = appointment.startTime.slice(11, 16);
+                    const endTime = appointment.endTime.slice(11, 16);
+
+                    const sameDay = appointment.startTime.slice(0, 10) === appointment.endTime.slice(0, 10);
+
+                    const duration = sameDay
+                        ? calculateDuration(startTime, endTime)
+                        : null;
+
+                    if (duration === null) {
+                        this.form.patchValue(
+                            {
+                                date: appointment.startTime.slice(0, 10),
+                                startTime,
+                                duration: 30,
+                                endTime: '',
+                            },
+                            { emitEvent: false },
+                        );
+
+                        this.isEndTimeOverflow.set(false);
+                    } else {
+                        this.form.patchValue(
+                            {
+                                date: appointment.startTime.slice(0, 10),
+                                startTime,
+                                duration,
+                            },
+                            { emitEvent: false },
+                        );
+
+                        this.updateCalculatedEndTime();
+                    }
 
                     this.isLoading.set(false);
                 },
@@ -139,6 +186,7 @@ export class AppointmentReschedule implements OnInit {
             return;
         }
 
+        this.form.updateValueAndValidity();
         this.form.markAllAsTouched();
 
         if (this.form.invalid) {
@@ -266,6 +314,36 @@ export class AppointmentReschedule implements OnInit {
             });
     }
 
+    get duration() {
+        return this.form.controls.duration;
+    }
+
+    private setupTimeCalculation(): void {
+        this.startTime.valueChanges
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(() => this.updateCalculatedEndTime());
+
+        this.duration.valueChanges
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(() => this.updateCalculatedEndTime());
+    }
+
+    private updateCalculatedEndTime(): void {
+        const calculated = this.duration.valid 
+            ? calculateEndTime(
+                this.startTime.value,
+                this.duration.value,
+            )
+            : null;
+
+        this.isEndTimeOverflow.set(
+            this.duration.valid &&
+            this.startTime.valid &&
+            calculated === null,
+        );
+
+        this.endTime.setValue(calculated ?? '');
+    }
 
     private handleSubmitError(error: unknown): void {
         this.submitError.set(this.getSubmitErrorMessage(error));
