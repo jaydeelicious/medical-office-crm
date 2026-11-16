@@ -1,4 +1,3 @@
-
 import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -183,6 +182,7 @@ export class AppointmentReschedule implements OnInit {
             return;
         }
 
+        this.form.updateValueAndValidity();
         this.form.markAllAsTouched();
 
         if (this.form.invalid) {

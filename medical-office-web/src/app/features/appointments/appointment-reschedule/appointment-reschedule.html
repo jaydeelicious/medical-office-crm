@@ -74,6 +74,13 @@
             </div>
         </div>
 
+        @if (form.hasError('pastAppointment')) {
+            <p class="field-error" role="alert">
+                The appointment must start in the future.
+                Please select a later date or start time.
+            </p>
+        }
+
         <div class="calculated-time-section">
             <div class="calculated-time-header">
                 <span class="calculated-time-label">
@@ -98,7 +105,7 @@
             End time must be later than start time.
         </p>
         }
-
+        
         @if (submitError(); as message) {
         <div class="submit-error">
             <app-error-message [message]="message" />

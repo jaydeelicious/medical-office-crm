@@ -26,6 +26,7 @@ import { CreateAppointmentRequest } from '../appointment.model';
 import { PatientQuickCreate } from '../patient-quick-create/patient-quick-create';
 
 import { appointmentTimeValidator } from '../validators/appointment-time.validator';
+import { appointmentFutureValidator } from '../validators/appointment-future.validator';
 
 import {
     calculateEndTime,
@@ -95,7 +96,10 @@ export class AppointmentForm implements OnInit {
             notes: ['', Validators.maxLength(1000)],
         },
         {
-            validators: appointmentTimeValidator,
+            validators: [
+                appointmentTimeValidator,
+                appointmentFutureValidator,
+            ],
         },
     );
 
@@ -140,6 +144,9 @@ export class AppointmentForm implements OnInit {
         }
 
         this.form.markAllAsTouched();
+
+        // Recheck against the current time when the user submits.
+        this.form.updateValueAndValidity();
 
         if (this.form.invalid) {
             return;
