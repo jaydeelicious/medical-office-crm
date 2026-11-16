@@ -188,3 +188,55 @@ form {
     width: 100%;
   }
 }
+
+
+.calculated-time-section {
+    padding: 16px;
+    margin-bottom: 20px;
+
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+}
+
+.calculated-time-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+.calculated-time-label {
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+}
+
+.calculated-time-value {
+    font-size: 1.2rem;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+}
+
+.duration-field input[type='number'] {
+    background-color: var(--color-surface);
+    color-scheme: dark;
+}
+
+.duration-field input[type='number']::-webkit-inner-spin-button,
+.duration-field input[type='number']::-webkit-outer-spin-button {
+    opacity: 0;
+}
+
+.duration-field input[type='number']:hover::-webkit-inner-spin-button,
+.duration-field input[type='number']:hover::-webkit-outer-spin-button,
+.duration-field input[type='number']:focus::-webkit-inner-spin-button,
+.duration-field input[type='number']:focus::-webkit-outer-spin-button {
+    opacity: 1;
+}
+
+@media (max-width: 600px) {
+    .calculated-time-header {
+        gap: 12px;
+    }
+}
+
