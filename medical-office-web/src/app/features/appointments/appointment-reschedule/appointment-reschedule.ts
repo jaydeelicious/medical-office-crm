@@ -33,6 +33,7 @@ import { LoadingIndicator } from '../../../shared/components/loading-indicator/l
 import { ErrorMessage } from '../../../shared/components/error-message/error-message';
 
 import { getAppointmentConflictCode } from '../appointment-conflict.utils';
+import { appointmentFutureValidator } from '../validators/appointment-future.validator';
 
 @Component({
     selector: 'app-appointment-reschedule',
@@ -79,7 +80,10 @@ export class AppointmentReschedule implements OnInit {
             endTime: ['', Validators.required],
         },
         {
-            validators: appointmentTimeValidator,
+            validators: [
+                appointmentTimeValidator,
+                appointmentFutureValidator,
+            ],
         },
     );
 

@@ -11,6 +11,7 @@ import {
 } from '../appointment.model';
 import { AppointmentService } from '../appointment.service';
 import { AppointmentForm } from './appointment-form';
+import { getLocalToday } from '../utils/appointment-datetime.utils';
 
 import { Patient } from '../../patients/patient.model';
 import { PatientService } from '../../patients/patient.service';
@@ -44,8 +45,8 @@ describe('AppointmentForm', () => {
     id: 'a1234567-b491-4e62-8519-d1f197c1a12e',
     patientId: patient.id,
     doctorId: doctor.id,
-    startTime: '2026-10-20T09:00:00',
-    endTime: '2026-10-20T09:30:00',
+    startTime: '2099-10-20T09:00:00',
+    endTime: '2099-10-20T09:30:00',
     status: AppointmentStatus.Scheduled,
     notes: 'Follow-up consultation',
     rowVersion: 'AQIDBAUGBwg=',
@@ -64,14 +65,14 @@ describe('AppointmentForm', () => {
   };
 
   function fillValidForm(): void {
-    component.form.patchValue({
-      patientId: patient.id,
-      doctorId: doctor.id,
-      date: '2026-10-20',
-      startTime: '09:00',
-      endTime: '09:30',
-      notes: 'Follow-up consultation',
-    });
+      component.form.patchValue({
+          patientId: patient.id,
+          doctorId: doctor.id,
+          date: '2099-10-20',
+          startTime: '09:00',
+          duration: 30,
+          notes: 'Follow-up consultation',
+      });
   }
 
   beforeEach(async () => {
@@ -105,16 +106,19 @@ describe('AppointmentForm', () => {
     router = TestBed.inject(Router);
     vi.spyOn(router, 'navigate').mockResolvedValue(true);
   });
+ 
+  it('should initialize appointment date and time defaults', () => {
+      fixture.detectChanges();
 
-  it('should start with an invalid empty form', () => {
-    fixture.detectChanges();
+      expect(component.patientId.hasError('required')).toBe(true);
+      expect(component.doctorId.hasError('required')).toBe(true);
 
-    expect(component.form.invalid).toBe(true);
-    expect(component.patientId.hasError('required')).toBe(true);
-    expect(component.doctorId.hasError('required')).toBe(true);
-    expect(component.date.hasError('required')).toBe(true);
-    expect(component.startTime.hasError('required')).toBe(true);
-    expect(component.endTime.hasError('required')).toBe(true);
+      expect(component.date.value).toBe(getLocalToday());
+      expect(component.startTime.value).toBe('10:00');
+      expect(component.duration.value).toBe(30);
+      expect(component.endTime.value).toBe('10:30');
+
+      expect(component.form.invalid).toBe(true);
   });
 
   it('should load patient and doctor options', () => {
@@ -227,8 +231,8 @@ describe('AppointmentForm', () => {
     expect(appointmentServiceMock.create).toHaveBeenCalledWith({
       patientId: patient.id,
       doctorId: doctor.id,
-      startTime: '2026-10-20T09:00:00',
-      endTime: '2026-10-20T09:30:00',
+      startTime: '2099-10-20T09:00:00',
+      endTime: '2099-10-20T09:30:00',
       notes: 'Follow-up consultation',
     });
 
@@ -368,7 +372,7 @@ describe('AppointmentForm', () => {
     fillValidForm();
 
     component.form.patchValue({
-      date: '2026-10-20',
+      date: '2099-10-20',
       startTime: '23:30',
       endTime: '23:59',
     });
@@ -377,9 +381,92 @@ describe('AppointmentForm', () => {
 
     expect(appointmentServiceMock.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        startTime: '2026-10-20T23:30:00',
-        endTime: '2026-10-20T23:59:00',
+        startTime: '2099-10-20T23:30:00',
+        endTime: '2099-10-20T23:59:00',
       }),
     );
+  });
+
+  describe('Date and duration selection', () => {
+      it('recalculates end time when start time changes', () => {
+          fixture.detectChanges();
+          fillValidForm();
+
+          component.startTime.setValue('11:15');
+
+          expect(component.endTime.value).toBe('11:45');
+      });
+
+      it('recalculates end time when duration changes', () => {
+          fixture.detectChanges();
+          fillValidForm();
+
+          component.duration.setValue(45);
+
+          expect(component.endTime.value).toBe('09:45');
+      });
+
+      it('allows a custom duration of 35 minutes', () => {
+          fixture.detectChanges();
+          fillValidForm();
+
+          component.duration.setValue(35);
+
+          expect(component.duration.valid).toBe(true);
+          expect(component.endTime.value).toBe('09:35');
+      });
+
+      it('rejects zero and negative durations', () => {
+          fixture.detectChanges();
+          fillValidForm();
+
+          component.duration.setValue(0);
+          expect(component.form.invalid).toBe(true);
+
+          component.duration.setValue(-10);
+          expect(component.form.invalid).toBe(true);
+      });
+
+      it('rejects appointments crossing midnight', () => {
+          fixture.detectChanges();
+          fillValidForm();
+
+          component.startTime.setValue('23:30');
+          component.duration.setValue(60);
+
+          expect(component.isEndTimeOverflow()).toBe(true);
+          expect(component.endTime.value).toBe('');
+          expect(component.form.invalid).toBe(true);
+      });
+
+      it('rejects a past appointment date', () => {
+          fixture.detectChanges();
+          fillValidForm();
+
+          component.date.setValue('2020-01-01');
+
+          expect(component.form.hasError('pastAppointment')).toBe(true);
+
+          component.onSubmit();
+
+          expect(appointmentServiceMock.create).not.toHaveBeenCalled();
+      });
+
+      it('submits the calculated end time', () => {
+          appointmentServiceMock.create.mockReturnValue(of(appointment));
+
+          fixture.detectChanges();
+          fillValidForm();
+
+          component.duration.setValue(45);
+          component.onSubmit();
+
+          expect(appointmentServiceMock.create).toHaveBeenCalledWith(
+              expect.objectContaining({
+                  startTime: '2099-10-20T09:00:00',
+                  endTime: '2099-10-20T09:45:00',
+              }),
+          );
+      });
   });
 });

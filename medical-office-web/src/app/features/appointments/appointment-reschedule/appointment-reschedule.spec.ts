@@ -26,8 +26,8 @@ describe('AppointmentReschedule', () => {
         id: 'a1234567-b491-4e62-8519-d1f197c1a12e',
         patientId: 'b1234567-b491-4e62-8519-d1f197c1a12e',
         doctorId: 'c1234567-b491-4e62-8519-d1f197c1a12e',
-        startTime: '2026-10-20T09:00:00',
-        endTime: '2026-10-20T09:30:00',
+        startTime: '2099-10-20T09:00:00',
+        endTime: '2099-10-20T09:30:00',
         status: AppointmentStatus.Scheduled,
         notes: 'Follow-up consultation',
         rowVersion: 'AQIDBAUGBwg=',
@@ -84,8 +84,9 @@ describe('AppointmentReschedule', () => {
 
         expect(component.appointment()).toEqual(appointment);
         expect(component.form.getRawValue()).toEqual({
-            date: '2026-10-20',
+            date: '2099-10-20',
             startTime: '09:00',
+            duration: 30,
             endTime: '09:30',
         });
 
@@ -152,7 +153,7 @@ describe('AppointmentReschedule', () => {
         fixture.detectChanges();
 
         component.form.patchValue({
-            date: '2026-10-21',
+            date: '2099-10-21',
             startTime: '10:00',
             endTime: '10:30',
         });
@@ -162,8 +163,8 @@ describe('AppointmentReschedule', () => {
         expect(appointmentServiceMock.reschedule).toHaveBeenCalledWith(
             appointment.id,
             {
-                startTime: '2026-10-21T10:00:00',
-                endTime: '2026-10-21T10:30:00',
+                startTime: '2099-10-21T10:00:00',
+                endTime: '2099-10-21T10:30:00',
                 rowVersion: appointment.rowVersion,
             },
         );
@@ -217,7 +218,7 @@ describe('AppointmentReschedule', () => {
         fixture.detectChanges();
 
         component.form.patchValue({
-            date: '2026-10-21',
+            date: '2099-10-21',
             startTime: '10:00',
             endTime: '10:30',
         });
@@ -250,8 +251,8 @@ describe('AppointmentReschedule', () => {
         expect(appointmentServiceMock.reschedule).toHaveBeenLastCalledWith(
             appointment.id,
             {
-                startTime: '2026-10-21T11:00:00',
-                endTime: '2026-10-21T11:30:00',
+                startTime: '2099-10-21T11:00:00',
+                endTime: '2099-10-21T11:30:00',
                 rowVersion: appointment.rowVersion,
             },
         );
@@ -391,7 +392,7 @@ describe('AppointmentReschedule', () => {
         fixture.detectChanges();
 
         component.form.patchValue({
-            date: '2026-10-21',
+            date: '2099-10-21',
             startTime: '23:00',
             endTime: '23:45',
         });
@@ -401,8 +402,8 @@ describe('AppointmentReschedule', () => {
         expect(appointmentServiceMock.reschedule).toHaveBeenCalledWith(
             appointment.id,
             {
-                startTime: '2026-10-21T23:00:00',
-                endTime: '2026-10-21T23:45:00',
+                startTime: '2099-10-21T23:00:00',
+                endTime: '2099-10-21T23:45:00',
                 rowVersion: appointment.rowVersion,
             },
         );
@@ -411,8 +412,8 @@ describe('AppointmentReschedule', () => {
     it('should refresh the RowVersion after a concurrency conflict', () => {
         const refreshedAppointment: Appointment = {
             ...appointment,
-            startTime: '2026-10-20T11:00:00',
-            endTime: '2026-10-20T11:30:00',
+            startTime: '2099-10-20T11:00:00',
+            endTime: '2099-10-20T11:30:00',
             rowVersion: 'CAcGBQQDAgE=',
         };
 
@@ -433,7 +434,7 @@ describe('AppointmentReschedule', () => {
         fixture.detectChanges();
 
         component.form.patchValue({
-            date: '2026-10-21',
+            date: '2099-10-21',
             startTime: '14:00',
             endTime: '14:30',
         });
@@ -444,8 +445,8 @@ describe('AppointmentReschedule', () => {
         expect(appointmentServiceMock.reschedule).toHaveBeenCalledWith(
             appointment.id,
             {
-                startTime: '2026-10-21T14:00:00',
-                endTime: '2026-10-21T14:30:00',
+                startTime: '2099-10-21T14:00:00',
+                endTime: '2099-10-21T14:30:00',
                 rowVersion: appointment.rowVersion,
             },
         );
@@ -467,8 +468,8 @@ describe('AppointmentReschedule', () => {
         expect(appointmentServiceMock.reschedule).toHaveBeenLastCalledWith(
             appointment.id,
             {
-                startTime: '2026-10-21T14:00:00',
-                endTime: '2026-10-21T14:30:00',
+                startTime: '2099-10-21T14:00:00',
+                endTime: '2099-10-21T14:30:00',
                 rowVersion: refreshedAppointment.rowVersion,
             },
         );
@@ -477,8 +478,8 @@ describe('AppointmentReschedule', () => {
     it('should preserve proposed date and time when refreshing after a conflict', () => {
         const refreshedAppointment: Appointment = {
             ...appointment,
-            startTime: '2026-10-22T09:00:00',
-            endTime: '2026-10-22T09:30:00',
+            startTime: '2099-10-22T09:00:00',
+            endTime: '2099-10-22T09:30:00',
             rowVersion: 'CAcGBQQDAgE=',
         };
 
@@ -498,8 +499,9 @@ describe('AppointmentReschedule', () => {
         fixture.detectChanges();
 
         const proposedTime = {
-            date: '2026-10-21',
+            date: '2099-10-21',
             startTime: '14:00',
+            duration: 30,
             endTime: '14:30',
         };
 
@@ -537,7 +539,7 @@ describe('AppointmentReschedule', () => {
         fixture.detectChanges();
 
         component.form.patchValue({
-            date: '2026-10-21',
+            date: '2099-10-21',
             startTime: '14:00',
             endTime: '14:30',
         });
@@ -637,5 +639,76 @@ describe('AppointmentReschedule', () => {
         component.onSubmit();
 
         expect(appointmentServiceMock.reschedule).toHaveBeenCalledOnce();
+    });
+
+    describe('Date and duration rescheduling', () => {
+        it('loads the original appointment duration', () => {
+            appointmentServiceMock.getById.mockReturnValue(of(appointment));
+
+            fixture.detectChanges();
+
+            expect(component.duration.value).toBe(30);
+            expect(component.endTime.value).toBe('09:30');
+        });
+
+        it('recalculates end time when duration changes', () => {
+            appointmentServiceMock.getById.mockReturnValue(of(appointment));
+
+            fixture.detectChanges();
+
+            component.duration.setValue(60);
+
+            expect(component.endTime.value).toBe('10:00');
+        });
+
+        it('rejects a rescheduling date in the past', () => {
+            appointmentServiceMock.getById.mockReturnValue(of(appointment));
+
+            fixture.detectChanges();
+
+            component.date.setValue('2020-01-01');
+
+            expect(component.form.hasError('pastAppointment')).toBe(true);
+
+            component.onSubmit();
+
+            expect(appointmentServiceMock.reschedule).not.toHaveBeenCalled();
+        });
+
+        it('rejects a duration extending past midnight', () => {
+            appointmentServiceMock.getById.mockReturnValue(of(appointment));
+
+            fixture.detectChanges();
+
+            component.startTime.setValue('23:30');
+            component.duration.setValue(60);
+
+            expect(component.isEndTimeOverflow()).toBe(true);
+            expect(component.form.invalid).toBe(true);
+        });
+
+        it('reschedules with the calculated end time and rowVersion', () => {
+            appointmentServiceMock.getById.mockReturnValue(of(appointment));
+            appointmentServiceMock.reschedule.mockReturnValue(of(void 0));
+
+            fixture.detectChanges();
+
+            component.form.patchValue({
+                date: '2099-10-21',
+                startTime: '14:00',
+                duration: 45,
+            });
+
+            component.onSubmit();
+
+            expect(appointmentServiceMock.reschedule).toHaveBeenCalledWith(
+                appointment.id,
+                {
+                    startTime: '2099-10-21T14:00:00',
+                    endTime: '2099-10-21T14:45:00',
+                    rowVersion: appointment.rowVersion,
+                },
+            );
+        });
     });
 });
