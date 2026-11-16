@@ -83,11 +83,21 @@
           </td>
 
           <td class="person-name">
-            {{ getPatientName(appointment.patientId) }}
+              <a
+                  class="record-link"
+                  [routerLink]="['/patients', appointment.patientId]"
+              >
+                  {{ getPatientName(appointment.patientId) }}
+              </a>
           </td>
 
           <td>
-            {{ getDoctorName(appointment.doctorId) }}
+              <a
+                  class="record-link"
+                  [routerLink]="['/doctors', appointment.doctorId]"
+              >
+                  {{ getDoctorName(appointment.doctorId) }}
+              </a>
           </td>
 
           <td>
