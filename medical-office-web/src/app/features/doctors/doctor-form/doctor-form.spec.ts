@@ -181,178 +181,202 @@ describe('DoctorForm', () => {
       },
     );
 
-    expect(router.navigate).toHaveBeenCalledWith(['/doctors']);
+    expect(router.navigate).toHaveBeenCalledWith([
+        '/doctors',
+        doctor.id,
+    ]);
+  });
+
+
+  
+  it('should return to doctor details when cancelling an edit', () => {
+    routeMock.snapshot.paramMap = convertToParamMap({
+      id: doctor.id,
+    });
+
+    doctorServiceMock.getById.mockReturnValue(of(doctor));
+
+    fixture.detectChanges();
+
+    expect(component.isEditMode()).toBe(true);
+    expect(component.isDoctorLoaded()).toBe(true);
+
+    component.cancel();
+
+    expect(router.navigate).toHaveBeenCalledWith([
+      '/doctors',
+      doctor.id,
+    ]);
+
+    expect(doctorServiceMock.update).not.toHaveBeenCalled();
+  });
+
+  it('should navigate back without saving when cancelled', () => {
+      fixture.detectChanges();
+
+      component.form.patchValue({
+          firstName: 'Jane',
+          lastName: 'Smith',
+          specialty: 'Cardiology',
+      });
+
+      component.cancel();
+
+      expect(router.navigate).toHaveBeenCalledWith(['/doctors']);
+      expect(doctorServiceMock.create).not.toHaveBeenCalled();
+      expect(doctorServiceMock.update).not.toHaveBeenCalled();
   });
 
   
-    it('should navigate back without saving when cancelled', () => {
-        fixture.detectChanges();
+  it('should display server-side validation errors', () => {
+      doctorServiceMock.create.mockReturnValue(
+          throwError(
+              () =>
+                  new HttpErrorResponse({
+                      status: 400,
+                      error: {
+                          errors: {
+                              Specialty: ['Specialty is required.'],
+                          },
+                      },
+                  }),
+          ),
+      );
 
-        component.form.patchValue({
-            firstName: 'Jane',
-            lastName: 'Smith',
-            specialty: 'Cardiology',
-        });
+      fixture.detectChanges();
 
-        component.cancel();
+      component.form.patchValue({
+          firstName: 'Jane',
+          lastName: 'Smith',
+          specialty: 'Cardiology',
+      });
 
-        expect(router.navigate).toHaveBeenCalledWith(['/doctors']);
-        expect(doctorServiceMock.create).not.toHaveBeenCalled();
-        expect(doctorServiceMock.update).not.toHaveBeenCalled();
-    });
+      component.onSubmit();
+      fixture.detectChanges();
 
-    
-    it('should display server-side validation errors', () => {
-        doctorServiceMock.create.mockReturnValue(
-            throwError(
-                () =>
-                    new HttpErrorResponse({
-                        status: 400,
-                        error: {
-                            errors: {
-                                Specialty: ['Specialty is required.'],
-                            },
-                        },
-                    }),
-            ),
-        );
+      expect(component.errorMessage()).toContain(
+          'Please correct the validation errors',
+      );
 
-        fixture.detectChanges();
+      expect(component.validationErrors()).toContain(
+          'Specialty is required.',
+      );
 
-        component.form.patchValue({
-            firstName: 'Jane',
-            lastName: 'Smith',
-            specialty: 'Cardiology',
-        });
+      expect(fixture.nativeElement.textContent).toContain(
+          'Specialty is required.',
+      );
 
-        component.onSubmit();
-        fixture.detectChanges();
-
-        expect(component.errorMessage()).toContain(
-            'Please correct the validation errors',
-        );
-
-        expect(component.validationErrors()).toContain(
-            'Specialty is required.',
-        );
-
-        expect(fixture.nativeElement.textContent).toContain(
-            'Specialty is required.',
-        );
-
-        expect(router.navigate).not.toHaveBeenCalled();
-    });
+      expect(router.navigate).not.toHaveBeenCalled();
+  });
 
 
-    it('should handle forbidden save requests', () => {
-        doctorServiceMock.create.mockReturnValue(
-            throwError(
-                () => new HttpErrorResponse({ status: 403 }),
-            ),
-        );
+  it('should handle forbidden save requests', () => {
+      doctorServiceMock.create.mockReturnValue(
+          throwError(
+              () => new HttpErrorResponse({ status: 403 }),
+          ),
+      );
 
-        fixture.detectChanges();
+      fixture.detectChanges();
 
-        component.form.patchValue({
-            firstName: 'Jane',
-            lastName: 'Smith',
-            specialty: 'Cardiology',
-        });
+      component.form.patchValue({
+          firstName: 'Jane',
+          lastName: 'Smith',
+          specialty: 'Cardiology',
+      });
 
-        component.onSubmit();
-        fixture.detectChanges();
+      component.onSubmit();
+      fixture.detectChanges();
 
-        expect(component.errorMessage()).toBe(
-            'You do not have permission to save doctors.',
-        );
+      expect(component.errorMessage()).toBe(
+          'You do not have permission to save doctors.',
+      );
 
-        expect(component.isSubmitting()).toBe(false);
-        expect(router.navigate).not.toHaveBeenCalled();
-    });
+      expect(component.isSubmitting()).toBe(false);
+      expect(router.navigate).not.toHaveBeenCalled();
+  });
 
-    
-    it('should prevent editing when doctor loading fails', () => {
-        routeMock.snapshot.paramMap = convertToParamMap({
-            id: doctor.id,
-        });
+  
+  it('should prevent editing when doctor loading fails', () => {
+      routeMock.snapshot.paramMap = convertToParamMap({
+          id: doctor.id,
+      });
 
-        doctorServiceMock.getById.mockReturnValue(
-            throwError(
-                () => new HttpErrorResponse({ status: 404 }),
-            ),
-        );
+      doctorServiceMock.getById.mockReturnValue(
+          throwError(
+              () => new HttpErrorResponse({ status: 404 }),
+          ),
+      );
 
-        fixture.detectChanges();
+      fixture.detectChanges();
 
-        expect(component.isEditMode()).toBe(true);
-        expect(component.isDoctorLoaded()).toBe(false);
+      expect(component.isEditMode()).toBe(true);
+      expect(component.isDoctorLoaded()).toBe(false);
 
-        expect(component.errorMessage()).toContain(
-            'The requested doctor could not be found.',
-        );
+      expect(component.errorMessage()).toContain(
+          'The requested doctor could not be found.',
+      );
 
-        component.onSubmit();
+      component.onSubmit();
 
-        expect(doctorServiceMock.update).not.toHaveBeenCalled();
+      expect(doctorServiceMock.update).not.toHaveBeenCalled();
 
-        const form = fixture.nativeElement.querySelector('form');
-        expect(form).toBeNull();
-    });
+      const form = fixture.nativeElement.querySelector('form');
+      expect(form).toBeNull();
+  });
 
-    
-    it('should prevent duplicate submissions while saving', () => {
-        const response = new Subject<Doctor>();
+  
+  it('should prevent duplicate submissions while saving', () => {
+      const response = new Subject<Doctor>();
 
-        doctorServiceMock.create.mockReturnValue(
-            response.asObservable(),
-        );
+      doctorServiceMock.create.mockReturnValue(
+          response.asObservable(),
+      );
 
-        fixture.detectChanges();
+      fixture.detectChanges();
 
-        component.form.patchValue({
-            firstName: 'Jane',
-            lastName: 'Smith',
-            specialty: 'Cardiology',
-        });
+      component.form.patchValue({
+          firstName: 'Jane',
+          lastName: 'Smith',
+          specialty: 'Cardiology',
+      });
 
-        component.onSubmit();
-        component.onSubmit();
+      component.onSubmit();
+      component.onSubmit();
 
-        expect(doctorServiceMock.create).toHaveBeenCalledOnce();
-        expect(component.isSubmitting()).toBe(true);
+      expect(doctorServiceMock.create).toHaveBeenCalledOnce();
+      expect(component.isSubmitting()).toBe(true);
 
-        fixture.detectChanges();
+      fixture.detectChanges();
 
-        const submitButton = fixture.nativeElement.querySelector(
-            '.submit-button',
-        ) as HTMLButtonElement;
+      const submitButton = fixture.nativeElement.querySelector(
+          '.submit-button',
+      ) as HTMLButtonElement;
 
-        expect(submitButton.disabled).toBe(true);
-        expect(submitButton.textContent).toContain('Saving...');
+      expect(submitButton.disabled).toBe(true);
+      expect(submitButton.textContent).toContain('Saving...');
 
-        response.next(doctor);
-        response.complete();
+      response.next(doctor);
+      response.complete();
 
-        expect(component.isSubmitting()).toBe(false);
-        expect(router.navigate).toHaveBeenCalledWith(['/doctors']);
-    });
+      expect(component.isSubmitting()).toBe(false);
+      expect(router.navigate).toHaveBeenCalledWith(['/doctors']);
+  });
 
-    
-    it('should allow cancellation when the form is invalid', () => {
-        fixture.detectChanges();
+  
+  it('should allow cancellation when the form is invalid', () => {
+      fixture.detectChanges();
 
-        expect(component.form.invalid).toBe(true);
+      expect(component.form.invalid).toBe(true);
 
-        const cancelButton = fixture.nativeElement.querySelector(
-            '.cancel-button',
-        ) as HTMLButtonElement;
+      const cancelButton = fixture.nativeElement.querySelector(
+          '.cancel-button',
+      ) as HTMLButtonElement;
 
-        expect(cancelButton.disabled).toBe(false);
+      expect(cancelButton.disabled).toBe(false);
 
-        cancelButton.click();
+      cancelButton.click();
 
-        expect(router.navigate).toHaveBeenCalledWith(['/doctors']);
-    });
-
-
+      expect(router.navigate).toHaveBeenCalledWith(['/doctors']);
+  });
 });

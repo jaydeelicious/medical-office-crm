@@ -951,4 +951,20 @@ describe('AppointmentDetails', () => {
             fixture.nativeElement.querySelector('.refresh-delete-button'),
         ).toBeNull();
     });
+
+    it('should link to the associated patient and doctor details', () => {
+        appointmentServiceMock.getById.mockReturnValue(of(appointment));
+
+        fixture.detectChanges();
+
+        const links = Array.from(
+            fixture.nativeElement.querySelectorAll('.record-link'),
+        ) as HTMLAnchorElement[];
+
+        const hrefs = links.map(link => link.getAttribute('href'));
+
+        expect(hrefs).toContain(`/patients/${patient.id}`);
+        expect(hrefs).toContain(`/doctors/${doctor.id}`);
+    });
+
 });

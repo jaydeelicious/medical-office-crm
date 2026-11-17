@@ -300,7 +300,29 @@ describe('PatientForm', () => {
             },
         );
 
-        expect(router.navigate).toHaveBeenCalledWith(['/patients']);
+        expect(router.navigate).toHaveBeenCalledWith([
+            '/patients',
+            patient.id,
+        ]);
+    });
+
+    it('should return to patient details when cancelling an edit', () => {
+        routeMock.snapshot.paramMap = convertToParamMap({
+            id: patient.id,
+        });
+
+        patientServiceMock.getById.mockReturnValue(of(patient));
+
+        fixture.detectChanges();
+
+        component.cancel();
+
+        expect(router.navigate).toHaveBeenCalledWith([
+            '/patients',
+            patient.id,
+        ]);
+
+        expect(patientServiceMock.update).not.toHaveBeenCalled();
     });
 
     it('should not submit edits if loading the patient fails', () => {

@@ -203,7 +203,7 @@ export class DoctorForm implements OnInit {
             return;
         }
 
-        void this.router.navigate(['/doctors']);
+        void this.router.navigate(this.getReturnUrl());
     }
 
     private handleSubmitError(error: unknown): void {
