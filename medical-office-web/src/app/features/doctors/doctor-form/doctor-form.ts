@@ -110,6 +110,14 @@ export class DoctorForm implements OnInit {
         }
     }
 
+    private getReturnUrl(): string[] {
+        if (this.isEditMode() && this.doctorId) {
+            return ['/doctors', this.doctorId];
+        }
+
+        return ['/doctors'];
+    }
+
     private loadDoctor(id: string): void {
         this.isLoading.set(true);
         this.isDoctorLoaded.set(false);
@@ -182,7 +190,7 @@ export class DoctorForm implements OnInit {
             )
             .subscribe({
                 next: () => {
-                    void this.router.navigate(['/doctors']);
+                    void this.router.navigate(this.getReturnUrl());
                 },
                 error: (error: unknown) => {
                     this.handleSubmitError(error);
