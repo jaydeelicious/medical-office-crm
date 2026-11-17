@@ -370,6 +370,104 @@ namespace MedicalOffice.Tests.Integration
         }
 
 
+        [Fact]
+        public async Task GetAll_WhenPatientIdProvided_ReturnsOnlyPatientsAppointments()
+        {
+            // Arrange
+            using var factory = new CustomWebApplicationFactory();
+            using var client = factory.CreateClient();
+
+            var patient1Id = Guid.NewGuid();
+            var patient2Id = Guid.NewGuid();
+            var doctorId = Guid.NewGuid();
+
+            var expectedAppointmentIds = new[]
+            {
+        Guid.NewGuid(),
+        Guid.NewGuid()
+    };
+
+            using (var scope = factory.Services.CreateScope())
+            {
+                var context = scope.ServiceProvider
+                    .GetRequiredService<MedicalOfficeDbContext>();
+
+                await context.Database.EnsureCreatedAsync();
+
+                context.Patients.AddRange(
+                    new Patient
+                    {
+                        Id = patient1Id,
+                        FirstName = "John",
+                        LastName = "Doe"
+                    },
+                    new Patient
+                    {
+                        Id = patient2Id,
+                        FirstName = "Jane",
+                        LastName = "Doe"
+                    });
+
+                context.Doctors.Add(new Doctor
+                {
+                    Id = doctorId,
+                    FirstName = "Maria",
+                    LastName = "Smith",
+                    Specialty = "Cardiology"
+                });
+
+                context.Appointments.AddRange(
+                    new Appointment
+                    {
+                        Id = expectedAppointmentIds[0],
+                        PatientId = patient1Id,
+                        DoctorId = doctorId,
+                        StartTime = new DateTime(2099, 10, 20, 9, 0, 0),
+                        EndTime = new DateTime(2099, 10, 20, 9, 30, 0),
+                        Status = AppointmentStatus.Scheduled
+                    },
+                    new Appointment
+                    {
+                        Id = expectedAppointmentIds[1],
+                        PatientId = patient1Id,
+                        DoctorId = doctorId,
+                        StartTime = new DateTime(2099, 10, 20, 10, 0, 0),
+                        EndTime = new DateTime(2099, 10, 20, 10, 30, 0),
+                        Status = AppointmentStatus.Scheduled
+                    },
+                    new Appointment
+                    {
+                        Id = Guid.NewGuid(),
+                        PatientId = patient2Id,
+                        DoctorId = doctorId,
+                        StartTime = new DateTime(2099, 10, 20, 11, 0, 0),
+                        EndTime = new DateTime(2099, 10, 20, 11, 30, 0),
+                        Status = AppointmentStatus.Scheduled
+                    });
+
+                await context.SaveChangesAsync();
+            }
+
+            // Act
+            var response = await client.GetAsync(
+                $"/api/appointments?patientId={patient1Id}");
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+            var result = await response.Content
+                .ReadFromJsonAsync<List<AppointmentDto>>();
+
+            result.Should().NotBeNull();
+            result.Should().HaveCount(2);
+
+            result!.Should().OnlyContain(
+                appointment => appointment.PatientId == patient1Id);
+
+            result.Select(appointment => appointment.Id)
+                .Should().BeEquivalentTo(expectedAppointmentIds);
+        }
+
         private static async Task<(Guid Doctor1Id, Guid Doctor2Id, Guid[] AppointmentIds)>
             SeedAppointmentsAsync(CustomWebApplicationFactory factory)
         {

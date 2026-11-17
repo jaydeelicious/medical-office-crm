@@ -177,7 +177,7 @@ export class PatientForm implements OnInit {
             )
             .subscribe({
                 next: () => {
-                    void this.router.navigate(['/patients']);
+                    void this.router.navigate(this.getReturnUrl());
                 },
                 error: (error: unknown) => {
                     this.handleSubmitError(error);
@@ -190,7 +190,15 @@ export class PatientForm implements OnInit {
             return;
         }
 
-        void this.router.navigate(['/patients']);
+        void this.router.navigate(this.getReturnUrl());
+    }
+
+    private getReturnUrl(): string[] {
+        if (this.isEditMode() && this.patientId) {
+            return ['/patients', this.patientId];
+        }
+
+        return ['/patients'];
     }
 
     private handleSubmitError(error: unknown): void {

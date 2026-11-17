@@ -103,14 +103,29 @@
         <h2>Appointment information</h2>
 
         <dl class="appointment-fields">
+            
             <div class="field">
                 <dt>Patient</dt>
-                <dd>{{ patientName() }}</dd>
+                <dd>
+                    <a
+                        class="record-link"
+                        [routerLink]="['/patients', appointment.patientId]"
+                    >
+                        {{ patientName() }}
+                    </a>
+                </dd>
             </div>
 
             <div class="field">
                 <dt>Doctor</dt>
-                <dd>{{ doctorName() }}</dd>
+                <dd>
+                    <a
+                        class="record-link"
+                        [routerLink]="['/doctors', appointment.doctorId]"
+                    >
+                        {{ doctorName() }}
+                    </a>
+                </dd>
             </div>
 
             <div class="field">

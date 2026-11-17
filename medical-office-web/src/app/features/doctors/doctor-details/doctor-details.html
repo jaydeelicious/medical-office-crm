@@ -27,6 +27,14 @@
         >
             Edit doctor
         </a>
+
+        <a
+            class="edit-button"
+            routerLink="/appointments"
+            [queryParams]="{ doctorId: doctor.id }"
+        >
+            View appointments
+        </a>
     </div>
     <div class="details-card">
       <h2>

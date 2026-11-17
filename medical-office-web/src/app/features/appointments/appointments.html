@@ -14,6 +14,26 @@
 
 
   <div class="appointment-filters">
+
+    <div class="filter-field">
+        <label for="patientFilter">Patient</label>
+
+        <select
+            id="patientFilter"
+            [value]="selectedPatientId()"
+            (change)="selectedPatientId.set($any($event.target).value)"
+            [disabled]="isLoading()"
+        >
+            <option value="">All patients</option>
+
+            @for (patient of patientsList(); track patient.id) {
+                <option [value]="patient.id">
+                    {{ patient.firstName }} {{ patient.lastName }}
+                </option>
+            }
+        </select>
+    </div>
+
     <div class="filter-field">
       <label for="doctorFilter">Doctor</label>
 
@@ -83,11 +103,21 @@
           </td>
 
           <td class="person-name">
-            {{ getPatientName(appointment.patientId) }}
+              <a
+                  class="record-link"
+                  [routerLink]="['/patients', appointment.patientId]"
+              >
+                  {{ getPatientName(appointment.patientId) }}
+              </a>
           </td>
 
           <td>
-            {{ getDoctorName(appointment.doctorId) }}
+              <a
+                  class="record-link"
+                  [routerLink]="['/doctors', appointment.doctorId]"
+              >
+                  {{ getDoctorName(appointment.doctorId) }}
+              </a>
           </td>
 
           <td>

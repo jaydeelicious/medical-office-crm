@@ -36,6 +36,7 @@ export interface UpdateAppointmentStatusRequest {
 }
 
 export interface AppointmentFilters {
+    patientId?: string;
     doctorId?: string;
     date?: string;
 }

@@ -198,4 +198,23 @@ describe('DoctorDetails', () => {
 
     expect(backLink.getAttribute('href')).toBe('/doctors');
   });
+
+  it('should link to appointments filtered by doctor', () => {
+      doctorServiceMock.getById.mockReturnValue(of(doctor));
+
+      fixture.detectChanges();
+
+      const links = Array.from(
+          fixture.nativeElement.querySelectorAll('a'),
+      ) as HTMLAnchorElement[];
+
+      const link = links.find(
+          item => item.textContent?.includes('View appointments'),
+      );
+
+      expect(link).toBeDefined();
+      expect(link!.getAttribute('href'))
+          .toBe(`/appointments?doctorId=${doctor.id}`);
+  });
+
 });

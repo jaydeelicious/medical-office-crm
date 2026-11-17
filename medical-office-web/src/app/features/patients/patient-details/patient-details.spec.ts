@@ -239,4 +239,23 @@ describe('PatientDetails', () => {
         );
     });
 
+    it('should link to appointments filtered by patient', () => {
+        patientServiceMock.getById.mockReturnValue(of(patient));
+
+        fixture.detectChanges();
+
+        const links = Array.from(
+            fixture.nativeElement.querySelectorAll('a'),
+        ) as HTMLAnchorElement[];
+
+        const link = links.find(
+            item => item.textContent?.includes('View appointments'),
+        );
+
+        expect(link).toBeDefined();
+        expect(link!.getAttribute('href'))
+            .toBe(`/appointments?patientId=${patient.id}`);
+    });
+
+
 });

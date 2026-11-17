@@ -1,8 +1,14 @@
 
 import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
-import { of, Subject, throwError } from 'rxjs';
+import { 
+    ActivatedRoute,
+    convertToParamMap,
+    ParamMap,
+    provideRouter,
+    Router,
+} from '@angular/router';
+import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
 import { vi } from 'vitest';
 
 import { Appointment, AppointmentStatus } from './appointment.model';
@@ -18,6 +24,8 @@ import { Doctor } from '../doctors/doctor.model';
 describe('Appointments', () => {
     let fixture: ComponentFixture<Appointments>;
     let component: Appointments;
+    let router: Router;
+    let queryParams: BehaviorSubject<ParamMap>;
 
     const patient: Patient = {
         id: '8d98f074-b491-4e62-8519-d1f197c1a12e',
@@ -60,6 +68,13 @@ describe('Appointments', () => {
         getAll: vi.fn(),
     };
 
+    function simulateQueryParams(
+        params: Record<string, string> = {},
+    ): void {
+        queryParams.next(convertToParamMap(params));
+        fixture.detectChanges();
+    }
+
     beforeEach(async () => {
         appointmentServiceMock.getAll.mockReset();
         patientServiceMock.getAll.mockReset();
@@ -67,6 +82,10 @@ describe('Appointments', () => {
 
         patientServiceMock.getAll.mockReturnValue(of([patient]));
         doctorServiceMock.getAll.mockReturnValue(of([doctor]));
+
+        queryParams = new BehaviorSubject<ParamMap>(
+            convertToParamMap({}),
+        );
 
         await TestBed.configureTestingModule({
             imports: [Appointments],
@@ -84,11 +103,20 @@ describe('Appointments', () => {
                     provide: DoctorService,
                     useValue: doctorServiceMock,
                 },
+                {
+                    provide: ActivatedRoute,
+                    useValue: {
+                        queryParamMap: queryParams.asObservable(),
+                    },
+                },
             ],
         }).compileComponents();
 
         fixture = TestBed.createComponent(Appointments);
         component = fixture.componentInstance;
+
+        router = TestBed.inject(Router);
+        vi.spyOn(router, 'navigate').mockResolvedValue(true);
     });
 
     it('should load and display appointments', () => {
@@ -313,8 +341,7 @@ describe('Appointments', () => {
             'Unable to load appointments',
         );
     });
-
-
+    
     it('should filter appointments by doctor', () => {
         appointmentServiceMock.getAll.mockReturnValue(
             of([appointment]),
@@ -325,14 +352,31 @@ describe('Appointments', () => {
         component.selectedDoctorId.set(doctor.id);
         component.applyFilters();
 
-        expect(appointmentServiceMock.getAll).toHaveBeenLastCalledWith({
+        expect(router.navigate).toHaveBeenCalledWith(
+            ['/appointments'],
+            {
+                queryParams: {
+                    patientId: null,
+                    doctorId: doctor.id,
+                    date: null,
+                },
+            },
+        );
+
+        simulateQueryParams({
             doctorId: doctor.id,
         });
+
+        expect(appointmentServiceMock.getAll)
+            .toHaveBeenLastCalledWith({
+                doctorId: doctor.id,
+            });
 
         expect(component.appliedFilters()).toEqual({
             doctorId: doctor.id,
         });
     });
+
 
     it('should filter appointments by date', () => {
         appointmentServiceMock.getAll.mockReturnValue(
@@ -343,6 +387,10 @@ describe('Appointments', () => {
 
         component.selectedDate.set('2026-10-20');
         component.applyFilters();
+
+        simulateQueryParams({
+            date: '2026-10-20',
+        });
 
         expect(appointmentServiceMock.getAll).toHaveBeenLastCalledWith({
             date: '2026-10-20',
@@ -360,6 +408,11 @@ describe('Appointments', () => {
         component.selectedDate.set('2026-10-20');
 
         component.applyFilters();
+
+        simulateQueryParams({
+            doctorId: doctor.id,
+            date: '2026-10-20',
+        });
 
         expect(appointmentServiceMock.getAll).toHaveBeenLastCalledWith({
             doctorId: doctor.id,
@@ -381,15 +434,26 @@ describe('Appointments', () => {
 
         component.selectedDoctorId.set(doctor.id);
         component.selectedDate.set('2026-10-20');
+
         component.applyFilters();
+
+        simulateQueryParams({
+            doctorId: doctor.id,
+            date: '2026-10-20',
+        });
 
         component.clearFilters();
 
+        // Simulate the router removing all query parameters.
+        simulateQueryParams();
+
+        expect(component.selectedPatientId()).toBe('');
         expect(component.selectedDoctorId()).toBe('');
         expect(component.selectedDate()).toBe('');
         expect(component.appliedFilters()).toEqual({});
 
-        expect(appointmentServiceMock.getAll).toHaveBeenLastCalledWith({});
+        expect(appointmentServiceMock.getAll)
+            .toHaveBeenLastCalledWith({});
     });
 
     it('should not reload appointments until filters are applied', () => {
@@ -424,6 +488,10 @@ describe('Appointments', () => {
         component.selectedDoctorId.set(doctor.id);
         component.applyFilters();
 
+        simulateQueryParams({
+            doctorId: doctor.id,
+        });
+
         expect(component.canRetry()).toBe(true);
         expect(component.appliedFilters()).toEqual({
             doctorId: doctor.id,
@@ -450,7 +518,10 @@ describe('Appointments', () => {
         component.selectedDate.set('2026-10-22');
         component.applyFilters();
 
-        fixture.detectChanges();
+        simulateQueryParams({
+            doctorId: doctor.id,
+            date: '2026-10-22',
+        });
 
         expect(component.appointments()).toEqual([]);
 
@@ -495,6 +566,11 @@ describe('Appointments', () => {
 
         applyButton.click();
 
+        simulateQueryParams({
+            doctorId: doctor.id,
+            date: '2026-10-20',
+        });
+
         expect(appointmentServiceMock.getAll).toHaveBeenCalledTimes(2);
 
         expect(appointmentServiceMock.getAll).toHaveBeenLastCalledWith({
@@ -521,7 +597,21 @@ describe('Appointments', () => {
         ) as HTMLButtonElement;
 
         clearButton.click();
-        fixture.detectChanges();
+
+        // Verify that clearing requests navigation without filters.
+        expect(router.navigate).toHaveBeenLastCalledWith(
+            ['/appointments'],
+            {
+                queryParams: {
+                    patientId: null,
+                    doctorId: null,
+                    date: null,
+                },
+            },
+        );
+
+        // Simulate Angular updating the URL after navigation.
+        simulateQueryParams();
 
         expect(component.selectedDoctorId()).toBe('');
         expect(component.selectedDate()).toBe('');
@@ -539,5 +629,87 @@ describe('Appointments', () => {
 
         expect(doctorSelect.value).toBe('');
         expect(dateInput.value).toBe('');
+    });
+
+    it('should link patient and doctor names to their details', () => {
+        appointmentServiceMock.getAll.mockReturnValue(
+            of([appointment]),
+        );
+
+        fixture.detectChanges();
+
+        const links = Array.from(
+            fixture.nativeElement.querySelectorAll('.record-link'),
+        ) as HTMLAnchorElement[];
+
+        const hrefs = links.map(link => link.getAttribute('href'));
+
+        expect(hrefs).toContain(`/patients/${patient.id}`);
+        expect(hrefs).toContain(`/doctors/${doctor.id}`);
+    });
+
+    it('should initialize patient filtering from the URL', () => {
+        appointmentServiceMock.getAll.mockReturnValue(
+            of([appointment]),
+        );
+
+        queryParams.next(convertToParamMap({
+            patientId: patient.id,
+        }));
+
+        fixture.detectChanges();
+
+        expect(component.selectedPatientId()).toBe(patient.id);
+
+        expect(component.appliedFilters()).toEqual({
+            patientId: patient.id,
+        });
+
+        expect(appointmentServiceMock.getAll)
+            .toHaveBeenCalledWith({
+                patientId: patient.id,
+            });
+    });
+
+    it('should navigate with the selected appointment filters', () => {
+        appointmentServiceMock.getAll.mockReturnValue(
+            of([appointment]),
+        );
+
+        fixture.detectChanges();
+
+        component.selectedPatientId.set(patient.id);
+        component.selectedDoctorId.set(doctor.id);
+        component.selectedDate.set('2099-10-20');
+
+        component.applyFilters();
+
+        expect(router.navigate).toHaveBeenCalledWith(
+            ['/appointments'],
+            {
+                queryParams: {
+                    patientId: patient.id,
+                    doctorId: doctor.id,
+                    date: '2099-10-20',
+                },
+            },
+        );
+
+        // A navigation request should not directly reload data.
+        expect(appointmentServiceMock.getAll).toHaveBeenCalledOnce();
+
+        // Simulate Angular emitting the updated URL parameters.
+        queryParams.next(convertToParamMap({
+            patientId: patient.id,
+            doctorId: doctor.id,
+            date: '2099-10-20',
+        }));
+
+        expect(appointmentServiceMock.getAll)
+            .toHaveBeenLastCalledWith({
+                patientId: patient.id,
+                doctorId: doctor.id,
+                date: '2099-10-20',
+            });
     });
 });
