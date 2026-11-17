@@ -31,7 +31,8 @@ namespace MedicalOffice.Infrastructure.Repositories
         public async Task<IReadOnlyList<Appointment>> GetAllAsync(
             Guid? doctorId = null,
             DateOnly? date = null,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default,
+            Guid? patientId = null)
         {
             IQueryable<Appointment> query = _context.Appointments
                 .AsNoTracking();
@@ -39,6 +40,11 @@ namespace MedicalOffice.Infrastructure.Repositories
             if (doctorId.HasValue)
             {
                 query = query.Where(a => a.DoctorId == doctorId.Value);
+            }
+
+            if (patientId.HasValue)
+            {
+                query = query.Where(a => a.PatientId == patientId.Value);
             }
 
             if (date.HasValue)

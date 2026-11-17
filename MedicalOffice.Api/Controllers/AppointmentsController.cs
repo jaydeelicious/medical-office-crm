@@ -20,13 +20,15 @@ namespace MedicalOffice.Api.Controllers
         public async Task<ActionResult<IReadOnlyList<AppointmentDto>>> GetAll(
             [FromQuery] Guid? doctorId,
             [FromQuery] DateOnly? date,
+            [FromQuery] Guid? patientId,
             CancellationToken cancellationToken)
         {
             var appointments =
                 await _appointmentService.GetAllAsync(
                     doctorId,
                     date,
-                    cancellationToken);
+                    cancellationToken,
+                    patientId);
 
             return Ok(appointments);
         }

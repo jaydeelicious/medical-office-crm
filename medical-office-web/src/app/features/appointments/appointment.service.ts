@@ -21,6 +21,10 @@ export class AppointmentService {
     getAll(filters: AppointmentFilters = {}): Observable<Appointment[]> {
         let params = new HttpParams();
 
+        if (filters.patientId) {
+            params = params.set('patientId', filters.patientId);
+        }
+
         if (filters.doctorId) {
             params = params.set('doctorId', filters.doctorId);
         }

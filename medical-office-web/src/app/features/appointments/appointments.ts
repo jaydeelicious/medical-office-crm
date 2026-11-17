@@ -8,7 +8,11 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { RouterLink } from '@angular/router';
+import { 
+  ActivatedRoute,
+  Router,
+  RouterLink 
+} from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { forkJoin } from 'rxjs';
 
@@ -23,6 +27,7 @@ import { EmptyState } from '../../shared/components/empty-state/empty-state';
 import { ErrorMessage } from '../../shared/components/error-message/error-message';
 
 import { Doctor } from '../doctors/doctor.model';
+import { Patient } from '../patients/patient.model';
 
 import {
   getAppointmentStatusLabel,
@@ -46,6 +51,8 @@ export class Appointments implements OnInit {
   private readonly patientService = inject(PatientService);
   private readonly doctorService = inject(DoctorService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   readonly appointments = signal<Appointment[]>([]);
   readonly patientNames = signal<Map<string, string>>(new Map());
@@ -60,6 +67,9 @@ export class Appointments implements OnInit {
   readonly selectedDoctorId = signal('');
   readonly selectedDate = signal('');
 
+  readonly selectedPatientId = signal('');
+  readonly patientsList = signal<Patient[]>([]);
+
   readonly appliedFilters = signal<AppointmentFilters>({});
 
   readonly doctorsList = signal<Doctor[]>([]);
@@ -69,14 +79,35 @@ export class Appointments implements OnInit {
   );
 
   ngOnInit(): void {
-    this.loadAppointments();
+    this.route.queryParamMap
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(params => {
+        const filters: AppointmentFilters = {
+          ...(params.get('patientId')
+            ? { patientId: params.get('patientId')! }
+            : {}),
+          ...(params.get('doctorId')
+            ? { doctorId: params.get('doctorId')! }
+            : {}),
+          ...(params.get('date')
+            ? { date: params.get('date')! }
+            : {}),
+        };
+
+        this.selectedPatientId.set(filters.patientId ?? '');
+        this.selectedDoctorId.set(filters.doctorId ?? '');
+        this.selectedDate.set(filters.date ?? '');
+
+        this.appliedFilters.set(filters);
+        this.loadAppointments();
+      });
   }
 
   loadAppointments(): void {
     this.isLoading.set(true);
     this.errorMessage.set(null);
     this.canRetry.set(false);
-
+    
     forkJoin({
       appointments: this.appointmentService.getAll(
         this.appliedFilters(),
@@ -88,7 +119,7 @@ export class Appointments implements OnInit {
       .subscribe({
         next: ({ appointments, patients, doctors }) => {
           this.appointments.set(appointments);
-
+          
           this.patientNames.set(
             new Map(
               patients.map((patient) => [
@@ -108,6 +139,7 @@ export class Appointments implements OnInit {
           );
 
           this.doctorsList.set(doctors);
+          this.patientsList.set(patients);
 
           this.isLoading.set(false);
         },
@@ -115,6 +147,7 @@ export class Appointments implements OnInit {
           this.appointments.set([]);
           this.patientNames.set(new Map());
           this.doctorNames.set(new Map());
+          this.patientsList.set([]);
 
           this.errorMessage.set(this.getErrorMessage(error));
           this.canRetry.set(this.isRetryable(error));
@@ -132,26 +165,23 @@ export class Appointments implements OnInit {
   }
 
   applyFilters(): void {
-    const filters: AppointmentFilters = {};
-
-    if (this.selectedDoctorId()) {
-      filters.doctorId = this.selectedDoctorId();
-    }
-
-    if (this.selectedDate()) {
-      filters.date = this.selectedDate();
-    }
-
-    this.appliedFilters.set(filters);
-    this.loadAppointments();
+      void this.router.navigate(['/appointments'], {
+          queryParams: {
+              patientId: this.selectedPatientId() || null,
+              doctorId: this.selectedDoctorId() || null,
+              date: this.selectedDate() || null,
+          },
+      });
   }
 
   clearFilters(): void {
-    this.selectedDoctorId.set('');
-    this.selectedDate.set('');
-    this.appliedFilters.set({});
-
-    this.loadAppointments();
+      void this.router.navigate(['/appointments'], {
+          queryParams: {
+              patientId: null,
+              doctorId: null,
+              date: null,
+          },
+      });
   }
 
   private getErrorMessage(error: unknown): string {
